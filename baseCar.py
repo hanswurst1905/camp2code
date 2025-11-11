@@ -4,8 +4,8 @@ import time
 class BaseCar():
 
     def __init__(self):
-        self._speed = None
-        self.speed = None
+        self._speed = 0
+        self.speed = 0
         self._angle = None
 
     @property
