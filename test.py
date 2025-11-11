@@ -1,7 +1,7 @@
 from base_car import*
 import time
 
-def fahrmodus_test():
+def fahrmodus_test(car):
     car.speed = 30
     car.steering_angle = 135
     car.drive()
