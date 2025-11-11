@@ -65,7 +65,8 @@ def fahrmodus2(car):
 def menue():
     menue_data = [
         ['1->','Fahrmodus_1'],
-        ['2->','Fahrmodus_2']
+        ['2->','Fahrmodus_2'],
+        ['3->','Abbruch']
     ]
     headers = ['No','Modus']
 
@@ -74,12 +75,16 @@ def menue():
     return input('bitte Auswahl treffen: ')
 
 def main():
-    selection = menue()
-    car = BaseCar()
-    if selection == '1':
-        fahrmodus1(car)
-    elif selection == '2':
-        fahrmodus2(car)
+    running = True
+    while running == True:
+        selection = menue()
+        car = BaseCar()
+        if selection == '1':
+            fahrmodus1(car)
+        elif selection == '2':
+            fahrmodus2(car)
+        elif selection == '3':
+            running = False
     
 
 if __name__ == "__main__":
