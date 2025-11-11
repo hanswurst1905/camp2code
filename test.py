@@ -8,7 +8,7 @@ def fahrmodus_test():
     car.drive()
     time.sleep(3)
     car.stop()
-
+    car.menue()
 def main():
     fahrmodus_test()  
 
