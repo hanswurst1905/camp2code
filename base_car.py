@@ -6,7 +6,7 @@ class BaseCar():
 
     def __init__(self):
         self._speed = 0
-        self._angle = 0
+        self._angle = 90
 
     @property
     def steering_angle(self):
@@ -28,7 +28,7 @@ class BaseCar():
     def direction(self):
         pass
 
-    def drive(self,drive, steering, driveTime):
+    def drive(self,drive, steering):
         steering.turn(self._angle)
         print('speed: ',self._speed, 'angle:', self._angle)
         if self._speed > 0:
@@ -37,12 +37,10 @@ class BaseCar():
         elif self._speed <= 0:
             drive.speed=self._speed * - 1
             drive.backward()
-        time.sleep(driveTime)    
 
-    def stop(self,stopTime=None):
+    def stop(self):
         stp = BackWheels()
         stp.stop()
-        time.sleep(stopTime)
 
 def set_speed(car):
     while True:
@@ -55,6 +53,7 @@ def set_speed(car):
                 raise ValueError
         except ValueError:
             print('Speed ungueltig! -> -100...100')
+            car.speed = 0
     
 
 def fahrmodus1(car):  
@@ -63,12 +62,15 @@ def fahrmodus1(car):
     set_speed(car)
     car.steering_angle = 130
     driveTime, stopTime = 3, 1
-    car.drive(drive, steering, driveTime) #vorwärts
-    car.stop(stopTime)
+    car.drive(drive, steering) #vorwärts
+    time.sleep(driveTime)
+    car.stop()
+    time.sleep(stopTime)
     car.steering_angle = 90
     car.speed=car.speed * - 1 #für die rückwärtsfahrt
-    car.drive(drive, steering,driveTime)
-    car.stop(stopTime=0)
+    car.drive(drive, steering)
+    time.sleep(driveTime)
+    car.stop()
 
 
 def fahrmodus2(car):
