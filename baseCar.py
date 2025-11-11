@@ -6,7 +6,7 @@ class BaseCar():
     def __init__(self):
         self._speed = 0
         self.speed = 0
-        self._angle = None
+        self._angle = 0
 
     @property
     def steering_angle(self):
