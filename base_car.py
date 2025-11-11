@@ -1,5 +1,6 @@
 from basisklassen import*
 import time
+from tabulate import tabulate
 
 class BaseCar():
 
@@ -59,14 +60,26 @@ def fahrmodus1(car):
 
 
 def fahrmodus2(car):
-    pass
+    print('tbd')
     
+def menue():
+    menue_data = [
+        ['1->','Fahrmodus_1'],
+        ['2->','Fahrmodus_2']
+    ]
+    headers = ['No','Modus']
 
+    print(tabulate(menue_data, headers=headers, tablefmt='grid'))
+
+    return input('bitte Auswahl treffen: ')
 
 def main():
+    selection = menue()
     car = BaseCar()
-    fahrmodus1(car)
-    
+    if selection == '1':
+        fahrmodus1(car)
+    elif selection == '2':
+        fahrmodus2(car)
     
 
 if __name__ == "__main__":
