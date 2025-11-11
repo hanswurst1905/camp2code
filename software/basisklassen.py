@@ -933,7 +933,7 @@ def main(modus):
     if modus == 3:
         print('Test Ultrasonic')
         usm = Ultrasonic()
-        usm.test()
+        usm.te3st()
 
     if modus == 4:
         print('Test Infrared')
