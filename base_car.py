@@ -28,14 +28,14 @@ class BaseCar():
     def direction(self):
         pass
 
-    def drive(self,drive, steering, driveDirection,driveTime):
+    def drive(self,drive, steering, driveTime):
         steering.turn(self._angle)
         print('speed: ',self._speed, 'angle:', self._angle)
-        if driveDirection == 'fwd':
+        if self._speed > 0:
             drive.speed=self._speed
             drive.forward()
-        elif driveDirection == 'bwd':
-            drive.speed=self._speed
+        elif self._speed <= 0:
+            drive.speed=self._speed * - 1
             drive.backward()
         time.sleep(driveTime)    
 
@@ -44,19 +44,31 @@ class BaseCar():
         stp.stop()
         time.sleep(stopTime)
 
+def set_speed(car):
+    while True:
+        try:
+            speed = int(input("speed eingeben: "))
+            if -100 <= speed <= 100:
+                car.speed = speed
+                break
+            else:
+                raise ValueError
+        except ValueError:
+            print('Speed ungueltig! -> -100...100')
+    
+
 def fahrmodus1(car):  
     drive = BackWheels()
     steering = FrontWheels()      
-    speed = int(input("speed eingeben: "))
+    set_speed(car)
     car.steering_angle = 130
-    car.speed = speed
-    driveTime, stopTime, driveDirection = 3, 1, 'fwd'
-    car.drive(drive, steering, driveDirection,driveTime)
-    driveDirection = 'bwd'
+    driveTime, stopTime = 3, 1
+    car.drive(drive, steering, driveTime) #vorwärts
     car.stop(stopTime)
     car.steering_angle = 90
-    car.drive(drive, steering, driveDirection,driveTime)
-    car.stop()
+    car.speed=car.speed * - 1 #für die rückwärtsfahrt
+    car.drive(drive, steering,driveTime)
+    car.stop(stopTime=0)
 
 
 def fahrmodus2(car):
