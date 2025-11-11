@@ -1,2 +1,2 @@
-class BaseCar()
+class BaseCar():
     pass
