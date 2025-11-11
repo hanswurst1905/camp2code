@@ -3,6 +3,11 @@ import time
 from tabulate import tabulate
 
 class BaseCar():
+    '''
+    BaseCar Class
+    Methode drive und stop
+    Setter und Getter für Geschwindigkeit und Lenkwinkel
+    '''
 
     def __init__(self):
         self._speed = 0
@@ -28,7 +33,9 @@ class BaseCar():
     def direction(self):
         pass
 
-    def drive(self,drive, steering):
+    def drive(self):
+        drive = BackWheels()
+        steering = FrontWheels()
         steering.turn(self._angle)
         print('speed: ',self._speed, 'angle:', self._angle)
         if self._speed > 0:
@@ -56,19 +63,17 @@ def set_speed(car):
             car.speed = 0
     
 
-def fahrmodus1(car):  
-    drive = BackWheels()
-    steering = FrontWheels()      
+def fahrmodus1(car):       
     set_speed(car)
     car.steering_angle = 130
     driveTime, stopTime = 3, 1
-    car.drive(drive, steering) #vorwärts
+    car.drive() #vorwärts
     time.sleep(driveTime)
     car.stop()
     time.sleep(stopTime)
     car.steering_angle = 90
     car.speed=car.speed * - 1 #für die rückwärtsfahrt
-    car.drive(drive, steering)
+    car.drive()
     time.sleep(driveTime)
     car.stop()
 
