@@ -42,7 +42,6 @@ class BaseCar():
  
     @speed.setter
     def speed(self, value):
-        print('._speed',self._speed, '.speed',self.speed)
         try:
             if self.__speed_min <= value <= self.__speed_max:
                 self._speed = value
@@ -58,7 +57,6 @@ class BaseCar():
 
     def drive(self):
         self.frontwheels.turn(self._steering_angle)
-        print('speed: ',self._speed, 'angle:', self._steering_angle)
         if self._speed > 0:
             self.backwheels.speed=self._speed
             self.backwheels.forward()
@@ -67,7 +65,8 @@ class BaseCar():
             self.backwheels.speed=self._speed * - 1
             self.backwheels.backward()
             self._direction = -1
-            
+        print(f'speed = {self._speed}, steering_angle = {self._steering_angle}, direction = {self._direction}')
+
     def stop(self):
         self.backwheels.stop()
         self._direction = 0
@@ -81,13 +80,11 @@ class BaseCar():
 
         driveTime, stopTime = 3, 1
         self.drive() #vorwärts
-        print('direction: ',self.direction)
         time.sleep(driveTime)
         self.stop()
         time.sleep(stopTime)
         self.speed=self.speed * - 1 #für die rückwärtsfahrt
         self.drive()
-        print('direction: ',self.direction)
         time.sleep(driveTime)
         self.stop()
 
@@ -97,8 +94,8 @@ class BaseCar():
 
 def menue():
     menue_data = [
-        ['0->','Fahrmodus_0'],
-        ['1->','Fahrmodus_1'],
+        ['0->','Fahrmodus_1 manuell'],
+        ['1->','Fahrmodus_1 auto'],
         ['2->','Fahrmodus_2'],
         ['3->','Abbruch']
     ]
