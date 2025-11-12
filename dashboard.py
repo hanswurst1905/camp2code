@@ -76,13 +76,13 @@ class SensorDashboard:
             if button_id == "btn-drive":
                 self.is_driving = True
                 self.car.drive()
-                return "🚗 Fahren gestartet."
+                return "Fahren gestartet."
             elif button_id == "btn-stop":
                 self.is_driving = False
                 self.car.speed = 0
                 self.car.steering_angle = 90
                 self.car.stop()
-                return "🛑 Fahrzeug gestoppt."
+                return "Fahrzeug gestoppt."
 
         # Intervall → Slider synchronisieren mit car-Werten
         @self.app.callback(
