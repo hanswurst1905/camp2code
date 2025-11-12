@@ -1,6 +1,7 @@
-from basisklassen import*
+from software.basisklassen import*
 import time
 from tabulate import tabulate
+import sys
 
 class BaseCar():
     '''
@@ -10,76 +11,79 @@ class BaseCar():
     '''
 
     def __init__(self):
+        self.__steering_angle_min = 45
+        self.__steering_angle_max = 135  
+        self._steering_angle = 90
+        self.__speed_min = -100
+        self.__speed_max = 100
         self._speed = 0
-        self._angle = 90
+        self.backwheels = BackWheels()
+        self.frontwheels = FrontWheels()
 
     @property
     def steering_angle(self):
-        return self._angle
-
+        return self._steering_angle
+    
     @steering_angle.setter
     def steering_angle(self, angle):
-        self._angle=angle
+        try:
+            if self.__steering_angle_min <= angle <= self.__steering_angle_max:
+                self._steering_angle = angle
+            else:
+                raise Exception(f"new angle {angle} have to be between {self.__steering_angle_min} and {self.__steering_angle_max}")
+        except Exception as e:
+            print(f'FEHLER!!! {e}\nSkript wird abgebrochen')
+            sys.exit()
 
     @property
     def speed(self):
         return self._speed
-    
+ 
     @speed.setter
     def speed(self, value):
-        self._speed=value
+        print('._speed',self._speed, '.speed',self.speed)
+        try:
+            if self.__speed_min <= value <= self.__speed_max:
+                self._speed = value
+            else:
+                raise Exception(f"new Speed {value} have to be between {self.__speed_min} and {self.__speed_max}")
+        except Exception as e:
+            print(f'FEHLER!!! {e}\nSkript wird abgebrochen')
+            sys.exit()
 
     @property
     def direction(self):
         pass
 
     def drive(self):
-        drive = BackWheels()
-        steering = FrontWheels()
-        steering.turn(self._angle)
-        print('speed: ',self._speed, 'angle:', self._angle)
+        self.frontwheels.turn(self._steering_angle)
+        print('speed: ',self._speed, 'angle:', self._steering_angle)
         if self._speed > 0:
-            drive.speed=self._speed
-            drive.forward()
+            self.backwheels.speed=self._speed
+            self.backwheels.forward()
         elif self._speed <= 0:
-            drive.speed=self._speed * - 1
-            drive.backward()
+            self.backwheels.speed=self._speed * - 1
+            self.backwheels.backward()
 
     def stop(self):
-        stp = BackWheels()
-        stp.stop()
+        self.backwheels.stop()
+
+    def fahrmodus1(self):  
+        self.speed = int(input("speed eingeben: "))
+        self.steering_angle = int(input("steering_angle eingeben: "))
+        driveTime, stopTime = 3, 1
+        self.drive() #vorwärts
+        time.sleep(driveTime)
+        self.stop()
+        time.sleep(stopTime)
+        self.speed=self.speed * - 1 #für die rückwärtsfahrt
+        self.drive()
+        time.sleep(driveTime)
+        self.stop()
 
 
-def set_speed(car):
-    while True:
-        try:
-            speed = int(input("speed eingeben: "))
-            if -100 <= speed <= 100:
-                car.speed = speed
-                break
-            else:
-                raise ValueError
-        except ValueError:
-            print('Speed ungueltig! -> -100...100')
-            car.speed = 0
-    
-def fahrmodus1(car):       
-    set_speed(car)
-    car.steering_angle = 130
-    driveTime, stopTime = 3, 1
-    car.drive() #vorwärts
-    time.sleep(driveTime)
-    car.stop()
-    time.sleep(stopTime)
-    car.steering_angle = 90
-    car.speed=car.speed * - 1 #für die rückwärtsfahrt
-    car.drive()
-    time.sleep(driveTime)
-    car.stop()
-
-
-def fahrmodus2(car):
-    print('tbd')
+    def fahrmodus2(self):
+        print('tbd')
 
 
 def menue():
@@ -100,9 +104,9 @@ def main():
         selection = menue()
         car = BaseCar()
         if selection == '1':
-            fahrmodus1(car)
+            car.fahrmodus1()
         elif selection == '2':
-            fahrmodus2(car)
+            car.fahrmodus2
         elif selection == '3':
             running = False
     
