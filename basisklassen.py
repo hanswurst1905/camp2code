@@ -412,23 +412,23 @@ class BackWheels(object):
         Args:
             t (int): time in seconds to drive. Defaults to 1.
         """
-        self.speed = 30
+        self.speed = 40
         self.forward()
         print('forward speed : {}'.format(self.speed))
 
         time.sleep(t)
-        self.speed = 40
+        self.speed = 50
         print('forward speed : {}'.format(self.speed))
 
         time.sleep(t)
-        self.speed = 20
+        self.speed = 30
         print('forward speed : {}'.format(self.speed))
 
         time.sleep(t)
         self.stop()
         print('stop speed : {}'.format(self.speed))
         time.sleep(t * 2)
-        self.speed = 20
+        self.speed = 30
         print('forward speed : {}'.format(self.speed))
 
         time.sleep(t)
