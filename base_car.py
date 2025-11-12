@@ -19,6 +19,7 @@ class BaseCar():
         self._speed = 0
         self.backwheels = BackWheels()
         self.frontwheels = FrontWheels()
+        self._direction = 0
 
     @property
     def steering_angle(self):
@@ -53,7 +54,7 @@ class BaseCar():
 
     @property
     def direction(self):
-        pass
+        return self._direction
 
     def drive(self):
         self.frontwheels.turn(self._steering_angle)
@@ -61,26 +62,34 @@ class BaseCar():
         if self._speed > 0:
             self.backwheels.speed=self._speed
             self.backwheels.forward()
+            self._direction = 1
         elif self._speed <= 0:
             self.backwheels.speed=self._speed * - 1
             self.backwheels.backward()
-
+            self._direction = -1
+            
     def stop(self):
         self.backwheels.stop()
+        self._direction = 0
 
-    def fahrmodus1(self):  
-        self.speed = int(input("speed eingeben: "))
-        self.steering_angle = int(input("steering_angle eingeben: "))
+    def fahrmodus1(self, selection):  
+        if selection == '0':
+            self.speed = int(input("speed eingeben: "))
+            self.steering_angle = int(input("steering_angle eingeben: "))
+        elif selection == '1':
+            self.speed = int(30)
+
         driveTime, stopTime = 3, 1
         self.drive() #vorwärts
+        print('direction: ',self.direction)
         time.sleep(driveTime)
         self.stop()
         time.sleep(stopTime)
         self.speed=self.speed * - 1 #für die rückwärtsfahrt
         self.drive()
+        print('direction: ',self.direction)
         time.sleep(driveTime)
         self.stop()
-
 
     def fahrmodus2(self):
         print('tbd')
@@ -88,6 +97,7 @@ class BaseCar():
 
 def menue():
     menue_data = [
+        ['0->','Fahrmodus_0'],
         ['1->','Fahrmodus_1'],
         ['2->','Fahrmodus_2'],
         ['3->','Abbruch']
@@ -103,10 +113,10 @@ def main():
     while running == True:
         selection = menue()
         car = BaseCar()
-        if selection == '1':
-            car.fahrmodus1()
+        if selection in ['0','1']:
+            car.fahrmodus1(selection)
         elif selection == '2':
-            car.fahrmodus2
+            car.fahrmodus2()
         elif selection == '3':
             running = False
     
