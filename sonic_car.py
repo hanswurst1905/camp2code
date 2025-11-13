@@ -17,7 +17,6 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         Bei Sensorfehler "-3: Negative distance" wird ein Exception geschmissen.
         Restliche Sensorfehler werden durch den zuletzt bekannten Wert ersetzt oder bei fehlender Historie durch 400 cm.
         """
-        distance = -1
         distance = self._ultrasonic.distance()
         if distance == -3:
             raise Exception("Sensorfehler: negative Distanz")
@@ -49,6 +48,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         """
         if distance > 50:
             self._speed = self.__user_defined_speed
+            self.drive() #Update speed
             return
         elif distance < 10:
             return
@@ -67,7 +67,6 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
 
     def fahrmodus3(self, speed = 50, steering_angle=60):
         self.speed = speed
-        print(f'hier sollt der speed stehen: {self.speed}')
         self.steering_angle = steering_angle
         distance = self.get_safe_distance()
         self.drive() #vorwärts
@@ -75,8 +74,6 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
             print(distance)
             self.calc_approach_speed(distance)
             distance = self.get_safe_distance()
-
-            
         self.stop()
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
