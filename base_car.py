@@ -151,7 +151,6 @@ class BaseCar():
         log_entry = self.get_log()
         print(log_entry)
 
-
 def menue():
     menue_data = [
         
