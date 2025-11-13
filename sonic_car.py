@@ -32,7 +32,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         """"
             50 cm Abstand entspricht 100% Speed und 10cm 20%
         """
-        if 10 > distance > 50:
+        if (50 > distance < 10):
             return
         speed = distance * 2
         if speed < self.speed:
@@ -41,7 +41,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
             
         
 
-    def fahrmodus3(self, speed = 50, steering_angle=90):
+    def fahrmodus3(self, speed = 50, steering_angle=60):
         self.speed = speed
         print(f'hier sollt der speed stehen: {self.speed}')
         self.steering_angle = steering_angle
