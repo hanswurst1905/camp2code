@@ -1,0 +1,24 @@
+/* Zahlen unter dem Slider (Markierungen) */
+.rc-slider-mark-text {
+    font-size: 18px;        /* größerer Text */
+    font-weight: bold;      /* optional: fett */
+    color: #ffffff;         /* z. B. weiß auf dunklem Hintergrund */
+}
+
+/* Slider-Marker (Thumb) */
+.rc-slider-handle {
+    width: 32px;            /* größerer Griff */
+    height: 32px;
+    background-color: #ec4a25;  /* z. B. orange-rot */
+    border: 2px solid white;
+    box-shadow: none;
+    margin-top: -15px;
+}
+
+/* Tooltip beim Ziehen */
+.rc-slider-tooltip {
+    font-size: 16px;
+    background-color: #333;
+    color: white;
+    border: none;
+}
