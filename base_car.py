@@ -23,6 +23,7 @@ class BaseCar():
         self.backwheels = BackWheels()
         self.frontwheels = FrontWheels()
         self._direction = 0
+        self.log = ''
 
     @property
     def steering_angle(self):
@@ -134,6 +135,22 @@ class BaseCar():
             self.stop()
         except KeyError as e:
             print(f'ein Fehler ist aufgetreten, Listen überprüfen -> KeyError {e}')
+
+    def get_log(self):
+        '''gibt Basislog als Dictionary zurück'''
+        self.log = {
+            "time": time.time(),
+            "speed": self.speed,
+            "direction": self.direction,
+            "steering_angle": self.steering_angle
+        }
+        return self.log
+
+    def write_log(self):
+        '''schreibt die logging Daten'''
+        log_entry = self.get_log()
+        print(log_entry)
+
 
 def menue():
     menue_data = [
