@@ -8,6 +8,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
     def __init__(self):
         super().__init__()
         self._ultrasonic = Ultrasonic()
+        self.__user_defined_speed = 0
 
     def get_distance(self) -> int:
         """ 
@@ -29,16 +30,24 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         self._ultrasonic.stop()
 
     def calc_approach_speed(self, distance) -> None:
-        """"
+        """
+            Geschwindigkeit beim Annähern an ein Hindernis reduzieren
             50 cm Abstand entspricht 100% Speed und 10cm 20%
         """
         if (50 > distance < 10):
+            self.speed = self.__user_defined_speed
             return
         speed = distance * 2
-        if speed < self.speed:
+        abs_old_speed = abs(self.speed)
+        if speed < abs_old_speed:
             print(f"Hindernis erkannt reduziere Geschwindigkeit von {self.speed} auf {speed}")
-            self.speed = speed
+            self._speed = speed * abs_old_speed/self.speed
         
+    @BaseCar.speed.setter
+    def speed(self, value):
+        super(SonicCar, self.__class__).speed.__set__(self, value)
+#        super().speed = value
+        self.__user_defined_speed = value
 
     def fahrmodus3(self, speed = 50, steering_angle=60):
         self.speed = speed
