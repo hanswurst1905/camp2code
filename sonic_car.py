@@ -28,8 +28,11 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         super().stop()
         self._ultrasonic.stop()
 
-    def fahrmodus3(self):
-        pass
+    def fahrmodus3(self, speed = 30):
+        self.speed = speed
+        while self.get_distance > 10:
+            self.drive() #vorwärts
+        self.stop()
 
     def fahrmodus4(self):
         pass
