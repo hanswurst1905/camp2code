@@ -24,6 +24,9 @@ class BaseCar():
 
     @property
     def steering_angle(self):
+        '''
+        Return: steering_angle
+        '''
         return self._steering_angle
     
     @steering_angle.setter
@@ -40,8 +43,7 @@ class BaseCar():
     @property
     def speed(self):
         '''
-        Return:
-        speed
+        Return: speed
         '''
         return self._speed
  
