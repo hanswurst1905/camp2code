@@ -16,6 +16,11 @@ class SensorDashboard:
             html.H2("PiCar Dashboard", className="text-center my-4"),
 
             dbc.Row([
+                dbc.Col(dbc.Button("Fahren", id="btn-drive", color="success", className="mt-4"), width=6),
+                dbc.Col(dbc.Button("Stop", id="btn-stop", color="danger", className="mt-4"), width=6),
+            ]),
+            html.Div(style={"height":"30px"}),
+            dbc.Row([
                 dbc.Col(dbc.Card([
                     dbc.CardHeader("Speed"),
                     dbc.CardBody([
@@ -33,11 +38,6 @@ class SensorDashboard:
                                    marks={45: "45°", 90: "90°", 135: "135°"})
                     ])
                 ], color="info", inverse=True), width=6),
-            ]),
-
-            dbc.Row([
-                dbc.Col(dbc.Button("Fahren", id="btn-drive", color="warning", className="mt-4"), width=6),
-                dbc.Col(dbc.Button("Stop", id="btn-stop", color="success", className="mt-4"), width=6),
             ]),
 
             html.Div(id="action-output", className="mt-3 text-center"),
@@ -94,7 +94,8 @@ class SensorDashboard:
             return self.car.speed, self.car.steering_angle
 
     def run(self):
-        self.app.run_server(debug=True)
+        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True) #lokale IP Adresse
+        
 
 
 if __name__ == "__main__":
