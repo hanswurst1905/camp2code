@@ -15,9 +15,11 @@ class BaseCar():
         self.__steering_angle_min = 45
         self.__steering_angle_max = 135  
         self._steering_angle = 90
+        self.__steering_angle_last = self.steering_angle
         self.__speed_min = -100
         self.__speed_max = 100
         self._speed = 0
+        self.__speed_last = self._speed
         self.backwheels = BackWheels()
         self.frontwheels = FrontWheels()
         self._direction = 0
@@ -67,20 +69,24 @@ class BaseCar():
         leitet die Fahrbefehle an basisklassen weiter,
         dazu können BaseCar().speed und BaseCar().steering_angle beschrieben werden
         '''
-        self.frontwheels.turn(self._steering_angle)
-        if self._speed > 0:
-            self.backwheels.speed=self._speed
-            self.backwheels.forward()
-            self._direction = 1
-        elif self._speed < 0:
-            self.backwheels.speed=self._speed * - 1
-            self.backwheels.backward()
-            self._direction = -1
-        elif self.speed == 0:
-            self.backwheels.speed=self._speed
-            self.backwheels.forward()
-            self._direction = 0
-        print(f'speed = {self._speed}, steering_angle = {self._steering_angle}, direction = {self._direction}')
+        if (self.__speed_last != self.speed) or (self.__steering_angle_last != self.steering_angle):
+            print(self.__speed_last,self.speed, self.__steering_angle_last, self.steering_angle)
+            self.__speed_last = self.speed
+            self.__steering_angle_last = self.steering_angle
+            self.frontwheels.turn(self._steering_angle)
+            if self._speed > 0:
+                self.backwheels.speed=self._speed
+                self.backwheels.forward()
+                self._direction = 1
+            elif self._speed < 0:
+                self.backwheels.speed=self._speed * - 1
+                self.backwheels.backward()
+                self._direction = -1
+            elif self.speed == 0:
+                self.backwheels.speed=self._speed
+                self.backwheels.forward()
+                self._direction = 0
+            print(f'speed = {self._speed}, steering_angle = {self._steering_angle}, direction = {self._direction}')
     
     def stop(self):
         self.backwheels.stop()
