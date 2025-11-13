@@ -9,21 +9,34 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         super().__init__()
         self._ultrasonic = Ultrasonic()
         self.__user_defined_speed = 0
+        self.__last_pos_distance = 400
 
     def get_distance(self) -> int:
         """ 
         Verwendet die initialisierte Klasse "Ultrasonic" um eine Distance in cm zu ermitteln.
         Bei Sensorfehler "-3: Negative distance" wird ein Exception geschmissen.
-        Restliche Sensorfehler werden als max. Distanz des Sensor 400cm zurückgegeben.
+        Restliche Sensorfehler werden durch den zuletzt bekannten Wert ersetzt oder bei fehlender Historie durch 400 cm.
         """
+        distance = -1
         distance = self._ultrasonic.distance()
         if distance == -3:
             raise Exception("Sensorfehler: negative Distanz")
-        elif distance < 0:
-            distance = 400
+        elif distance > 0:
+            self.__last_pos_distance = distance
+        return self.__last_pos_distance
 
+    def get_safe_distance(self) -> int:
+        """
+        Führt get_distance aus und stopt Fahrzeug bei einer exception
+        """
+        try:
+            distance = self.get_distance()
+        except:
+            self.stop()
+            print("Fehler vom Ultraschallsensor")
+        
         return distance
-
+    
     def stop(self):
         '''führt neben dem stop von base_car auch den stop des Sonic Sensor aus'''
         super().stop()
@@ -42,6 +55,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         if speed < abs_old_speed:
             print(f"Hindernis erkannt reduziere Geschwindigkeit von {self.speed} auf {speed}")
             self._speed = speed * abs_old_speed/self.speed
+            self.drive() #Update speed
         
     @BaseCar.speed.setter
     def speed(self, value):
@@ -49,15 +63,18 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
 #        super().speed = value
         self.__user_defined_speed = value
 
-    def fahrmodus3(self, speed = 50, steering_angle=60):
+    def fahrmodus3(self, speed = 50, steering_angle=90):
         self.speed = speed
         print(f'hier sollt der speed stehen: {self.speed}')
         self.steering_angle = steering_angle
-        distance = self.get_distance()
+        distance = self.get_safe_distance()
+        self.drive() #vorwärts
         while distance > 4:
+            print(distance)
             self.calc_approach_speed(distance)
-            self.drive() #vorwärts
-            distance = self.get_distance()
+            distance = self.get_safe_distance()
+
+            
         self.stop()
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
