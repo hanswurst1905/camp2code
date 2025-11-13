@@ -28,11 +28,16 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         super().stop()
         self._ultrasonic.stop()
 
-    def fahrmodus3(self, speed = 30):
+    def fahrmodus3(self, speed = 100, steering_angle=90):
         self.speed = speed
-        while self.get_distance > 10:
+        print(f'hier sollt der speed stehen: {self.speed}')
+        self.steering_angle = steering_angle
+        while self.get_distance() > 4:
+            if self.get_distance() < 10:
+                self.speed = 25
             self.drive() #vorwärts
         self.stop()
+        print("Fahrzeug gestoppt, Hindernis erkannt")
 
     def fahrmodus4(self):
         pass
@@ -62,8 +67,6 @@ def main():
             car.fahrmodus1()
         elif selection == '2':
             car.fahrmodus2()
-        elif selection == '3':
-            running = False
         elif selection == '3':
             car.fahrmodus3()
         elif selection == '4':
