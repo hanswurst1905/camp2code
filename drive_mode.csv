@@ -1,0 +1,6 @@
+# csv Datei zum konfigurieren des Fahrmodus in base_car.py Fahrmodus_3
+speed,steering_angle,drive_time
+30,90,3
+0,90,1
+-30,90,3
+40,135,3
