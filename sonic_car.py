@@ -38,7 +38,6 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         if speed < self.speed:
             print(f"Hindernis erkannt reduziere Geschwindigkeit von {self.speed} auf {speed}")
             self.speed = speed
-            
         
 
     def fahrmodus3(self, speed = 50, steering_angle=60):
