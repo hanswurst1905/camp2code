@@ -25,7 +25,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
 
     def stop(self):
         '''führt neben dem stop von base_car auch den stop des Sonic Sensor aus'''
-        super.stop()
+        super().stop()
         self._ultrasonic.stop()
 
     def fahrmodus3(self):
@@ -38,7 +38,9 @@ def menue():
     menue_data = [
         ['1->','Fahrmodus_1'],
         ['2->','Fahrmodus_2'],
-        ['3->','Abbruch']
+        ['3->','Fahrmodus_3'],
+        ['4->','Fahrmodus_4'],
+        ['5->','Abbruch']
     ]
     headers = ['No','Modus']
 
@@ -52,11 +54,11 @@ def main():
         selection = menue()
         car = SonicCar()
         print(car.get_distance())
-        car._ultrasonic.test()
+#        car._ultrasonic.test()
         if selection == '1':
             car.fahrmodus1()
         elif selection == '2':
-            car.fahrmodus2
+            car.fahrmodus2()
         elif selection == '3':
             running = False
         elif selection == '3':
