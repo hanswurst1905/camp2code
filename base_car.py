@@ -70,7 +70,6 @@ class BaseCar():
         dazu können BaseCar().speed und BaseCar().steering_angle beschrieben werden
         '''
         if (self.__speed_last != self.speed) or (self.__steering_angle_last != self.steering_angle):
-            print(self.__speed_last,self.speed, self.__steering_angle_last, self.steering_angle)
             self.__speed_last = self.speed
             self.__steering_angle_last = self.steering_angle
             self.frontwheels.turn(self._steering_angle)
