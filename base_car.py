@@ -2,6 +2,7 @@ from software.basisklassen import*
 import time
 from tabulate import tabulate
 import sys
+import pandas as pd
 
 class BaseCar():
     '''
@@ -91,20 +92,34 @@ class BaseCar():
 # Fahrmodus 2: Kreisfahrt mit maximalem Lenkwinkel
 
     def fahrmodus(self,selection):
-        if selection == '1': #Fahrmodus1
-            speed_lst = [30,0,-30]
-            angle_lst = [90,90,90]
-            time_sleep = [3,1,3]
-        elif selection == '2': #Fahrmodus2
-            speed_lst = [40,40,-40,-40]
-            angle_lst = [90,135,135,90]
-            time_sleep = [1,8,8,1]
-        for i in range(len(speed_lst)):
-            self.speed, self.steering_angle = speed_lst[i], angle_lst[i]
-            self.drive()
-            time.sleep(time_sleep[i])
-        self.stop()
+        try:
+            if selection == '1': #Fahrmodus1
+                speed_lst = [30,0,-30]
+                angle_lst = [90,90,90]
+                time_sleep = [3,1,3]
+            elif selection == '2': #Fahrmodus2
+                speed_lst = [40,40,-40,-40]
+                angle_lst = [90,135,135,90]
+                time_sleep = [1,8,8,1]
+            elif selection == '3': #Fahrmodus3 konfigirierbar über drive_mode.csv
+                df = pd.read_csv("drive_mode.csv",comment='#')
+                speed_lst = df["speed"].tolist()
+                angle_lst = df["steering_angle"].tolist()
+                time_sleep = df["drive_time"].tolist()
 
+            for i in range(len(speed_lst)):
+                self.speed, self.steering_angle = speed_lst[i], angle_lst[i]
+                self.drive()
+                time.sleep(time_sleep[i])
+            self.stop()
+
+        except FileNotFoundError as e:
+            print(f'ein Fehler ist aufgetreten -> {e}')
+        except ValueError as e:
+            print(f'ein Fehler ist aufgetreten, Listen überprüfen -> {e}')
+            self.stop()
+        except KeyError as e:
+            print(f'ein Fehler ist aufgetreten, Listen überprüfen -> KeyError {e}')
         # elif selection == '1':
         # self.speed, self.steering_angle = 40, 90
         # self.drive()
@@ -126,12 +141,11 @@ def menue():
         
         ['1->','Fahrmodus_1'],
         ['2->','Fahrmodus_2'],
-        ['3->','Abbruch']
+        ['3->','Fahrmodus_3 (drive_mode.csv)'],
+        ['4->','Abbruch']
     ]
     headers = ['No','Modus']
-
     print(tabulate(menue_data, headers=headers, tablefmt='grid'))
-
     return input('bitte Auswahl treffen: ')
 
 def main():
@@ -144,6 +158,8 @@ def main():
         elif selection == '2':
             car.fahrmodus(selection)
         elif selection == '3':
+            car.fahrmodus(selection)
+        elif selection == '4':
             running = False
     
 
