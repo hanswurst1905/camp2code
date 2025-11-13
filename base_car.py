@@ -39,6 +39,10 @@ class BaseCar():
 
     @property
     def speed(self):
+        '''
+        Return:
+        speed
+        '''
         return self._speed
  
     @speed.setter
@@ -57,20 +61,42 @@ class BaseCar():
         return self._direction
 
     def drive(self):
+        '''
+        leitet die Fahrbefehle an basisklassen weiter,
+        dazu können BaseCar().speed und BaseCar().steering_angle beschrieben werden
+        '''
         self.frontwheels.turn(self._steering_angle)
         if self._speed > 0:
             self.backwheels.speed=self._speed
             self.backwheels.forward()
             self._direction = 1
-        elif self._speed <= 0:
+        elif self._speed < 0:
             self.backwheels.speed=self._speed * - 1
             self.backwheels.backward()
             self._direction = -1
+        elif self.speed == 0:
+            self.backwheels.speed=self._speed
+            self.backwheels.forward()
+            self._direction = 0
         print(f'speed = {self._speed}, steering_angle = {self._steering_angle}, direction = {self._direction}')
-
+    
     def stop(self):
         self.backwheels.stop()
         self._direction = 0
+
+    def fahrmodus_1(self):
+        selection=1
+        self.fahrmodus(selection)
+
+    def fahrmodus_2(self):
+        selection=2
+        self.fahrmodus(selection)
+
+    def fahrmodus_3(self):
+        pass
+
+    def fahrmodus_4(self):
+        pass
 
     def fahrmodus(self,selection):
         try:
@@ -101,23 +127,6 @@ class BaseCar():
             self.stop()
         except KeyError as e:
             print(f'ein Fehler ist aufgetreten, Listen überprüfen -> KeyError {e}')
-
-# Fahrmodus 2: Kreisfahrt mit maximalem Lenkwinkel     
-    # def fahrmodus2(self)       
-    #     self.speed, self.steering_angle = 40, 90
-    #     self.drive()
-    #     time.sleep(1)
-    #     self.steering_angle = 135
-    #     self.drive()
-    #     time.sleep(8)
-    #     self.stop()
-    #     self.speed=self.speed * - 1 
-    #     self.drive()
-    #     time.sleep(8)
-    #     self.steering_angle = 90
-    #     self.drive()
-    #     time.sleep(1)
-    #     self.stop()
 
 def menue():
     menue_data = [
