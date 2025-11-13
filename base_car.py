@@ -71,31 +71,60 @@ class BaseCar():
         self.backwheels.stop()
         self._direction = 0
 
-    def fahrmodus1(self, selection):  
-        if selection == '0':
-            self.speed = int(input("speed eingeben: "))
-            self.steering_angle = int(input("steering_angle eingeben: "))
-        elif selection == '1':
-            self.speed = int(30)
+    #def fahrmodus1(self, selection):  
+        # if selection == '0':
+        #     self.speed = int(input("speed eingeben: "))
+        #     self.steering_angle = int(input("steering_angle eingeben: "))
+        # elif selection == '1':
+        #     self.speed = int(30)
 
-        driveTime, stopTime = 3, 1
-        self.drive() #vorwärts
-        time.sleep(driveTime)
+        # driveTime, stopTime = 3, 1
+        # self.drive() #vorwärts
+        # time.sleep(driveTime)
+        # self.stop()
+        # time.sleep(stopTime)
+        # self.speed=self.speed * - 1 #für die rückwärtsfahrt
+        # self.drive()
+        # time.sleep(driveTime)
+        # self.stop()
+
+# Fahrmodus 2: Kreisfahrt mit maximalem Lenkwinkel
+
+    def fahrmodus(self,selection):
+        if selection == '1': #Fahrmodus1
+            speed_lst = [30,0,-30]
+            angle_lst = [90,90,90]
+            time_sleep = [3,1,3]
+        elif selection == '2': #Fahrmodus2
+            speed_lst = [40,40,-40,-40]
+            angle_lst = [90,135,135,90]
+            time_sleep = [1,8,8,1]
+        for i in range(len(speed_lst)):
+            self.speed, self.steering_angle = speed_lst[i], angle_lst[i]
+            self.drive()
+            time.sleep(time_sleep[i])
         self.stop()
-        time.sleep(stopTime)
-        self.speed=self.speed * - 1 #für die rückwärtsfahrt
-        self.drive()
-        time.sleep(driveTime)
-        self.stop()
 
-    def fahrmodus2(self):
-        print('tbd')
-
+        # elif selection == '1':
+        # self.speed, self.steering_angle = 40, 90
+        # self.drive()
+        # time.sleep(1)
+        # self.steering_angle = 135
+        # self.drive()
+        # time.sleep(8)
+        # self.stop()
+        # self.speed=self.speed * - 1 
+        # self.drive()
+        # time.sleep(8)
+        # self.steering_angle = 90
+        # self.drive()
+        # time.sleep(1)
+        # self.stop()
 
 def menue():
     menue_data = [
-        ['0->','Fahrmodus_1 manuell'],
-        ['1->','Fahrmodus_1 auto'],
+        
+        ['1->','Fahrmodus_1'],
         ['2->','Fahrmodus_2'],
         ['3->','Abbruch']
     ]
@@ -111,9 +140,9 @@ def main():
         selection = menue()
         car = BaseCar()
         if selection in ['0','1']:
-            car.fahrmodus1(selection)
+            car.fahrmodus(selection)
         elif selection == '2':
-            car.fahrmodus2()
+            car.fahrmodus(selection)
         elif selection == '3':
             running = False
     
