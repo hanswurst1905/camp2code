@@ -28,7 +28,32 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         super().stop()
         self._ultrasonic.stop()
 
-    def fahrmodus3(self, speed = 100, steering_angle=90):
+    def calc_approach_speed(self, distance) -> None:
+        """"
+            50 cm Abstand entspricht 100% Speed und 10cm 20%
+        """
+        if 10 > distance > 50:
+            return
+        speed = distance * 2
+        if speed < self.speed:
+            print(f"Hindernis erkannt reduziere Geschwindigkeit von {self.speed} auf {speed}")
+            self.speed = speed
+            
+        
+
+    def fahrmodus3(self, speed = 50, steering_angle=90):
+        self.speed = speed
+        print(f'hier sollt der speed stehen: {self.speed}')
+        self.steering_angle = steering_angle
+        distance = self.get_distance()
+        while distance > 4:
+            self.calc_approach_speed(distance)
+            self.drive() #vorwärts
+            distance = self.get_distance()
+        self.stop()
+        print("Fahrzeug gestoppt, Hindernis erkannt")
+
+    def fahrmodus4(self, speed = 50, steering_angle = 90):
         self.speed = speed
         print(f'hier sollt der speed stehen: {self.speed}')
         self.steering_angle = steering_angle
@@ -37,10 +62,6 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
                 self.speed = 25
             self.drive() #vorwärts
         self.stop()
-        print("Fahrzeug gestoppt, Hindernis erkannt")
-
-    def fahrmodus4(self):
-        pass
 
 def menue():
     menue_data = [
