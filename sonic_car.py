@@ -54,10 +54,14 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
             return
         speed = distance * 2
         abs_old_speed = abs(self.speed)
+        delta_speed = speed - abs_old_speed
         if speed < abs_old_speed:
             print(f"Hindernis erkannt reduziere Geschwindigkeit von {self.speed} auf {speed}")
             self._speed = speed * abs_old_speed/self.speed
-            self.drive() #Update speed
+        elif speed > abs_old_speed:
+            print(f"Hindernis entfernt sich, Geschwindigkeit von {self.speed} auf {speed}")
+            self._speed = (self._speed + min(delta_speed, 5 ) ) * abs_old_speed/self.speed   
+        self.drive() #Update speed
         
     @BaseCar.speed.setter
     def speed(self, value):
@@ -71,7 +75,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         distance = self.get_safe_distance()
         self.drive() #vorwärts
         while distance > 4:
-            print(distance)
+            print(f'Distance: {distance}')
             self.calc_approach_speed(distance)
             distance = self.get_safe_distance()
         self.stop()
