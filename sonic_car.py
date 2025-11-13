@@ -47,8 +47,10 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
             Geschwindigkeit beim Annähern an ein Hindernis reduzieren
             50 cm Abstand entspricht 100% Speed und 10cm 20%
         """
-        if (50 > distance < 10):
-            self.speed = self.__user_defined_speed
+        if distance > 50:
+            self._speed = self.__user_defined_speed
+            return
+        elif distance < 10:
             return
         speed = distance * 2
         abs_old_speed = abs(self.speed)
@@ -63,7 +65,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
 #        super().speed = value
         self.__user_defined_speed = value
 
-    def fahrmodus3(self, speed = 50, steering_angle=90):
+    def fahrmodus3(self, speed = 50, steering_angle=60):
         self.speed = speed
         print(f'hier sollt der speed stehen: {self.speed}')
         self.steering_angle = steering_angle
