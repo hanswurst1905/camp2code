@@ -13,17 +13,26 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         """ 
         Verwendet die initialisierte Klasse "Ultrasonic" um eine Distance in cm zu ermitteln.
         Bei Sensorfehler "-3: Negative distance" wird ein Exception geschmissen.
-        Restliche Sensorfehler werden als "Max int32" zurückgegeben.
+        Restliche Sensorfehler werden als max. Distanz des Sensor 400cm zurückgegeben.
         """
         distance = self._ultrasonic.distance()
         if distance == -3:
             raise Exception("Sensorfehler: negative Distanz")
         elif distance < 0:
-            distance = 2147483647
+            distance = 400
 
         return distance
 
+    def stop(self):
+        '''führt neben dem stop von base_car auch den stop des Sonic Sensor aus'''
+        super.stop()
+        self._ultrasonic.stop()
 
+    def fahrmodus3(self):
+        pass
+
+    def fahrmodus4(self):
+        pass
 
 def menue():
     menue_data = [
@@ -49,6 +58,12 @@ def main():
         elif selection == '2':
             car.fahrmodus2
         elif selection == '3':
+            running = False
+        elif selection == '3':
+            car.fahrmodus3()
+        elif selection == '4':
+            car.fahrmodus4()
+        elif selection == '5':
             running = False
     
 
