@@ -9,7 +9,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         super().__init__()
         self._ultrasonic = Ultrasonic()
         self.__user_defined_speed = 0
-        self.__last_pos_distance = 400
+        self.__last_pos_distance = -1
 
     def get_distance(self) -> int:
         """ 
@@ -50,48 +50,36 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
             return
         
         if (distance > 50) and (self.speed < self.__user_defined_speed):
-            self._speed += 1
-            self.drive() #Update speed
+            self.speed += 1
             return
-        elif distance < 10:
-            return
-        calc_new_target_speed_from_lut = distance * 2
+        calc_new_target_speed_from_lut = max(distance,10) * 2   # damit erfolg begrenzung aus Speed_min = 20
         if calc_new_target_speed_from_lut < self.speed:
             print(f"Hindernis erkannt reduziere Geschwindigkeit von {self.speed} auf {calc_new_target_speed_from_lut}")
-            self._speed = calc_new_target_speed_from_lut
+            self.speed = calc_new_target_speed_from_lut
         elif self.__user_defined_speed > calc_new_target_speed_from_lut > self.speed:
-            self._speed +=1
-            print(f"Hindernis entfernt sich, Geschwindigkeit von {self.speed} auf {self.speed}")            
-        self.drive() #Update speed
+            self.speed +=1
+            print(f"Hindernis entfernt sich, Geschwindigkeit von {self.speed} auf {self.speed + 1}")            
 
-#    def user_speed(self):
-#        self.__user_defined_speed = self._speed
+#     @BaseCar.speed.setter   # Dekorator überschreibt den aus der BaseCar geerbten Setter der Property "speed"
+#     def speed(self, value):
+# #       super().speed = value  # geht nicht weil super() ein Proxy Objekt zurückgibt ist nur für Methoden => speed ist aber eien Property
+# #       super(SonicCar, self.__class__).speed.__set__(self, value)      # super(SonicCar, self.__class__) => ruft im Elternteil von SonicCar (also BaseCar)
+#                                                                         # speed.__set__(self, value) => direkt den Setter von "speed" auf
+#         BaseCar.speed.__set__(self, value)                              # macht das gleich wie Zeile drüber6
+#         self.__user_defined_speed = value # neu hinzugefügtes Attribut
 
-    # @property
-    # def speed(self):
-    #     return super().speed
-    # @speed.setter
-    # def speed(self,value):
-    #     BaseCar.speed = value
-    #     self.__user_defined_speed = value
-    @BaseCar.speed.setter   # Dekorator überschreibt den aus der BaseCar geerbten Setter der Property "speed"
-    def speed(self, value):
- #      super().speed = value  # geht nicht weil super() ein Proxy Objekt zurückgibt ist nur für Methoden => speed ist aber eien Property
-       #super(SonicCar, self.__class__).speed.__set__(self, value)      # super(SonicCar, self.__class__) => ruft im Elternteil von SonicCar (also BaseCar)
-                                                                        # speed.__set__(self, value) => direkt den Setter von "speed" auf
-        BaseCar.speed.__set__(self, value)                              # macht das gleich wie Zeile drüber6
-        self.__user_defined_speed = value # neu hinzugefügtes Attribut
-
-    def fahrmodus3(self, speed = 50, steering_angle=60):
-        self.__user_defined_speed = speed
-        self.speed = speed
+    def fahrmodus3(self, init_speed = 50, steering_angle=60):
+        self.__user_defined_speed = init_speed
+        self.speed = init_speed
         self.steering_angle = steering_angle
-        distance = self.get_safe_distance()
-        self.drive() #vorwärts
-        while distance > 4:
-#            print(f'Distance: {distance}')
-            self.calc_approach_speed(distance)
+        distance = -1
+        while distance == -1:
             distance = self.get_safe_distance()
+        while distance > 4 or self.direction == -1 :
+#            print(f'Distance: {distance}')
+#            self.calc_approach_speed(distance)
+            distance = self.get_safe_distance()
+#            self.drive() #vorwärts
         self.stop()
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
