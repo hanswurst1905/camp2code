@@ -2,6 +2,7 @@ import dash
 from dash import html, dcc, Output, Input, Dash
 import dash_bootstrap_components as dbc
 from base_car import*
+import plotly.express as px
 
 class SensorDashboard(DataLogger):
     def __init__(self,car):
@@ -23,7 +24,9 @@ class SensorDashboard(DataLogger):
             html.H2("PiCar Dashboard", className="text-center my-4"),
 
             dbc.Tabs([
-                # Tab 1: Fahren
+#################
+# Tab 1: Fahren
+#################
                 dbc.Tab(label="Fahren", tab_id="tab-steuerung", children=[
                     dbc.Row([
                         html.Div(style={"height": "30px"}),
@@ -65,7 +68,10 @@ class SensorDashboard(DataLogger):
                 ]),
             ]),
 
-                # Tab 2: Messwerte
+#########################
+# Tab 2: Messwerte
+#########################
+
                 dbc.Tab(label="Messwerte", tab_id="tab-messwerte", children=[
                     html.Div(style={"height": "30px"}),
                     dbc.Row([
@@ -83,6 +89,9 @@ class SensorDashboard(DataLogger):
                             ])
                         ], color="success", inverse=True), width=6),
                     ]),
+                    dbc.Row([
+                        dbc.Col(dcc.Graph(id="logging"),width=12)
+                    ]),
                 ]),
             ], id="tabs", active_tab="tab-steuerung"),
 
@@ -92,6 +101,9 @@ class SensorDashboard(DataLogger):
             dcc.Interval(id="interval-sync", interval=1000, n_intervals=0)
         ], fluid=True)
 
+############################################################
+# Callbacks
+############################################################
 
     def _setup_callbacks(self):
         @self.app.callback(
@@ -103,12 +115,13 @@ class SensorDashboard(DataLogger):
         def update_values(n_intervals):
             return(
                 html.Div(
-                f"IST:\t\t{self.car.speed} km/h\n\nmin:\t\t{self.car.direction} km/h\nmax:\t{self.car.speed} km/h\nmean:\t{self.car.speed} km/h",
-                style={"whiteSpace": "pre"}  # behält Tabs (\t) und Zeilenumbrüche (\n)
+                f"IST:\t\t{self.car.speed} km/h\n\nmin:\t\t{self.car.speed_min} km/h\nmax:\t{self.car.speed_max} km/h\nmean:\t{round(self.car.speed_mean,0)} km/h",
+                style={"whiteSpace": "pre"}  # fpr Tabs (\t) und Zeilenumbrüche (\n)
                 ),
-
-                f"{self.car.steering_angle}°"
-            ) 
+                html.Div(
+                f"IST:\t\t{self.car.steering_angle}°",
+                style={"whiteSpace": "pre"}
+            ))
         # Sliderbewegung → Werte setzen + ggf. fahren
         @self.app.callback(
             Output("speed-display", "children"),
@@ -121,9 +134,11 @@ class SensorDashboard(DataLogger):
             self.car.steering_angle = angle
             if self.is_driving:
                 self.car.drive()
+            self.write_log()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
+        
 
-        # Buttons → Fahrstatus setzen + Werte ggf. zurücksetzen
+
         @self.app.callback(
             Output("action-output", "children"),
             Input("btn-drive", "n_clicks"),
@@ -149,6 +164,7 @@ class SensorDashboard(DataLogger):
                 self.car.speed = 0
                 self.car.steering_angle = 90
                 self.car.stop()
+                self.write_log()
                 return "Fahrzeug gestoppt."
             elif button_id == "btn-driveMode1":
                 self.car.fahrmodus_1()
@@ -170,6 +186,21 @@ class SensorDashboard(DataLogger):
         )
         def sync_sliders(n):
             return self.car.speed, self.car.steering_angle
+
+        @self.app.callback(
+            Output("logging", "figure"),
+            Input("interval-sync", "n_intervals")
+        )
+        def update_graph(n):
+            if self.car.logs.empty:
+                # Leere Grafik zurückgeben
+                fig = px.scatter(title="Noch keine Logs vorhanden")
+            else:
+                df = self.car.logs.copy()
+                fig = px.line(df, x="time", y="speed", title="Geschwindigkeit über Zeit")
+                # Optional weitere Linien hinzufügen
+                fig.add_scatter(x=df["time"], y=df["steering_angle"], mode="lines", name="Lenkwinkel")
+            return fig
 
     def run(self):
         self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
