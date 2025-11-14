@@ -10,7 +10,6 @@ class BaseCar():
     Methode drive und stop
     Setter und Getter für Geschwindigkeit und Lenkwinkel
     '''
-
     def __init__(self):
         self.__steering_angle_min = 45
         self.__steering_angle_max = 135  
@@ -87,18 +86,17 @@ class BaseCar():
                 self.backwheels.forward()
                 self._direction = 0
             print(f'speed = {self._speed}, steering_angle = {self._steering_angle}, direction = {self._direction}')
-    
+        
     def stop(self):
+        self.speed = 0
         self.backwheels.stop()
         self._direction = 0
 
     def fahrmodus_1(self):
-        selection=1
-        self.fahrmodus(selection)
+        self.fahrmodus(selection='1')
 
     def fahrmodus_2(self):
-        selection=2
-        self.fahrmodus(selection)
+        self.fahrmodus(selection='2')
 
     def fahrmodus_3(self):
         pass
@@ -107,11 +105,13 @@ class BaseCar():
         pass
 
     def fahrmodus(self,selection):
+        print(selection)
         try:
             if selection == '1': #Fahrmodus1
                 speed_lst = [30,0,-30]
                 angle_lst = [90,90,90]
                 time_sleep = [3,1,3]
+                print("selection")
             elif selection == '2': #Fahrmodus2
                 speed_lst = [40,40,-40,-40]
                 angle_lst = [90,135,135,90]
@@ -176,7 +176,6 @@ def main():
             car.fahrmodus(selection)
         elif selection == '4':
             running = False
-    
 
 if __name__ == "__main__":
     main()
