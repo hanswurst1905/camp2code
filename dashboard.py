@@ -23,7 +23,8 @@ class SensorDashboard:
                         dbc.Col(dbc.Button("Fahren", id="btn-drive", color="success", className="title"), width=6),
                         dbc.Col(dbc.Button("Stop", id="btn-stop", color="danger", className="title"), width=6),
                     ]),
-                    html.Div(style={"height":"30px"}),
+
+                html.Div(style={"height":"30px"}),                    
 
                     dbc.Row([
                         dbc.Col(dbc.Card([
@@ -48,7 +49,14 @@ class SensorDashboard:
                             ])
                         ], color="info", inverse=True), width=6),
                     ]),
+                    dbc.Row([
+                        html.Div(style={"height": "30px"}),
+                        dbc.Col(dbc.Button("Fahrmodus_1", id="btn-driveMode1", color="success", className="title"), width=3),
+                        dbc.Col(dbc.Button("Fahrmodus_2", id="btn-driveMode2", color="success", className="title"), width=3),
+                        dbc.Col(dbc.Button("Fahrmodus_3", id="btn-driveMode3", color="success", className="title"), width=3),
+                        dbc.Col(dbc.Button("Fahrmodus_4", id="btn-driveMode4", color="success", className="title"), width=3),
                 ]),
+            ]),
 
                 # Tab 2: Messwerte
                 dbc.Tab(label="Messwerte", tab_id="tab-messwerte", children=[
@@ -88,7 +96,7 @@ class SensorDashboard:
         def update_values(n_intervals):
             return(
                 html.Div(
-                f"ist:\t\t{self.car.speed} km/h\nmin:\t\t{self.car.direction} km/h\nmax:\t{self.car.speed} km/h\nmean:\t{self.car.speed} km/h",
+                f"IST:\t\t{self.car.speed} km/h\n\nmin:\t\t{self.car.direction} km/h\nmax:\t{self.car.speed} km/h\nmean:\t{self.car.speed} km/h",
                 style={"whiteSpace": "pre"}  # behält Tabs (\t) und Zeilenumbrüche (\n)
                 ),
 
@@ -113,9 +121,13 @@ class SensorDashboard:
             Output("action-output", "children"),
             Input("btn-drive", "n_clicks"),
             Input("btn-stop", "n_clicks"),
+            Input("btn-driveMode1","n_clicks"),
+            Input("btn-driveMode2","n_clicks"),
+            Input("btn-driveMode3","n_clicks"),
+            Input("btn-driveMode4","n_clicks"),
             prevent_initial_call=True
         )
-        def handle_buttons(drive_clicks, stop_clicks):
+        def handle_buttons(drive_clicks, stop_clicks, driveMode1_clicks, driveMode2_clicks,driveMode3_clicks,driveMode4_clicks):
             ctx = dash.callback_context
             if not ctx.triggered:
                 return ""
@@ -130,6 +142,16 @@ class SensorDashboard:
                 self.car.steering_angle = 90
                 self.car.stop()
                 return "Fahrzeug gestoppt."
+            elif button_id == "btn-driveMode1":
+                self.car.fahrmodus_1()
+                return "Fahrmodus_1 gestartet"
+            elif button_id == "btn-driveMode2":
+                self.car.fahrmodus_2()
+                return "Fahrmodus_2 gestartet"
+            elif button_id == "btn-driveMode3":
+                return "under construction"
+            elif button_id == "btn-driveMode4":
+                return "under construction"
 
         # Intervall → Slider synchronisieren mit car-Werten
         @self.app.callback(
