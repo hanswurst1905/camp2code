@@ -46,8 +46,9 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
             Geschwindigkeit beim Annähern an ein Hindernis reduzieren
             50 cm Abstand entspricht 100% Speed und 10cm 20%
         """
-        if self.direction < 1:
+        if self.direction < 0 or self.speed < 0:
             return
+
         
         if (distance > 50) and (self.speed < self.__user_defined_speed):
             self.speed += 1
@@ -68,7 +69,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
 #         BaseCar.speed.__set__(self, value)                              # macht das gleich wie Zeile drüber6
 #         self.__user_defined_speed = value # neu hinzugefügtes Attribut
 
-    def fahrmodus3(self, init_speed = 50, steering_angle=60):
+    def fahrmodus3(self, init_speed = 50, steering_angle=90):
         self.__user_defined_speed = init_speed
         self.speed = init_speed
         self.steering_angle = steering_angle
@@ -83,15 +84,17 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         self.stop()
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
-    def fahrmodus4(self, speed = 50, steering_angle = 90):
-        self.speed = speed
-        print(f'hier sollt der speed stehen: {self.speed}')
-        self.steering_angle = steering_angle
-        while self.get_distance() > 4:
-            if self.get_distance() < 10:
-                self.speed = 25
-            self.drive() #vorwärts
-        self.stop()
+    def fahrmodus4(self, init_speed = 60, steering_angle = 90):
+        while True:
+            self.fahrmodus3(init_speed,steering_angle)
+            self.steering_angle = 45
+            self.speed = -30
+            self.drive()
+            time.sleep(2)
+            self.stop()
+
+
+
 
 def menue():
     menue_data = [
