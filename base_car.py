@@ -26,12 +26,21 @@ class BaseCar():
         self.log = ''
         self.frontwheels.turn(self._steering_angle)
         self.logs = pd.DataFrame()
+        self._log_saved = False
 
-    def __del__(self):
-        #wird beim löschen des objects aufgerufen
+    # def __del__(self):
+    #     #wird beim löschen des objects aufgerufen
+    #     # self.save_logs()
+    #     print('BaseCar wird gelöscht')
+
+    def save_logs(self):
+        print(f'save log für: {id(self)}')
+        if self._log_saved:
+            print('log bereits gespeichert')
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"logs/{timestamp}_baseCarLogging.log"
         self.logs.to_csv(filename,index=False)
+        self._log_saved = True
 
     @property
     def steering_angle(self):
@@ -48,7 +57,7 @@ class BaseCar():
             else:
                 raise Exception(f"new angle {angle} have to be between {self.__steering_angle_min} and {self.__steering_angle_max}")
         except Exception as e:
-            print(f'FEHLER!!! {e}\nSkript wird abgebrochen')
+            print(f'Fehler: {e}\nSkript wird abgebrochen')
             sys.exit()
 
     @property
@@ -95,7 +104,8 @@ class BaseCar():
                 self.backwheels.forward()
                 self._direction = 0
             print(f'speed = {self._speed}, steering_angle = {self._steering_angle}, direction = {self._direction}')
-        
+            # logger = DataLogger(self)
+            # logger.write_log()
     def stop(self):
         self.speed = 0
         self.backwheels.stop()
@@ -134,6 +144,7 @@ class BaseCar():
             for i in range(len(speed_lst)):
                 self.speed, self.steering_angle = speed_lst[i], angle_lst[i]
                 self.drive()
+                DataLogger(self).write_log()
                 time.sleep(time_sleep[i])
             self.stop()
 
@@ -146,8 +157,8 @@ class BaseCar():
             print(f'ein Fehler ist aufgetreten, Listen überprüfen -> KeyError {e}')
 
 class DataLogger():
+
     def __init__(self,car):
-        
         self.car = car
 
     def get_log(self):
