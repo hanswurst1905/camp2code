@@ -19,6 +19,9 @@ class BaseCar():
         self.__speed_min = -100
         self.__speed_max = 100
         self._speed = 0
+        self._speed_max = 0
+        self._speed_min = 0
+        self._speed_mean = 0
         self.__speed_last = self._speed
         self.backwheels = BackWheels()
         self.frontwheels = FrontWheels()
@@ -27,6 +30,7 @@ class BaseCar():
         self.frontwheels.turn(self._steering_angle)
         self.logs = pd.DataFrame()
         self._log_saved = False
+        self._state = 'init'
 
     # def __del__(self):
         #wird beim löschen des objects aufgerufen
@@ -79,25 +83,29 @@ class BaseCar():
             sys.exit()
     @property
     def speed_min(self):
-        speed_min = self.logs["speed"].min()
-        return speed_min
+        self._speed_min = self.logs["speed"].min()
+        return self._speed_min
     @property
     def speed_max(self):
-        speed_max = self.logs["speed"].max()
-        return speed_max
+        self._speed_max = self.logs["speed"].max()
+        return self._speed_max
     @property
     def speed_mean(self):
-        speed_mean = self.logs["speed"].mean()
-        return speed_mean
+        self._speed_mean = self.logs["speed"].mean()
+        return self._speed_mean
     @property
     def direction(self):
         return self._direction
+    @property
+    def state(self):
+        return self._state
 
     def drive(self):
         '''
         leitet die Fahrbefehle an basisklassen weiter,
         dazu können BaseCar().speed und BaseCar().steering_angle beschrieben werden
         '''
+        self._state = 'drive'
         if (self.__speed_last != self.speed) or (self.__steering_angle_last != self.steering_angle):
             self.__speed_last = self.speed
             self.__steering_angle_last = self.steering_angle
@@ -117,10 +125,12 @@ class BaseCar():
             print(f'speed = {self._speed}, steering_angle = {self._steering_angle}, direction = {self._direction}')
             # logger = DataLogger(self)
             # logger.write_log()
+
     def stop(self):
         self.speed = 0
         self.backwheels.stop()
         self._direction = 0
+        self._state = 'stop'
 
     def fahrmodus_1(self):
         self.fahrmodus(selection='1')
@@ -213,6 +223,7 @@ def main():
         elif selection == '3':
             car.fahrmodus(selection)
         elif selection == '4':
+            car.save_logs()
             running = False
 
 if __name__ == "__main__":
