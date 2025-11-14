@@ -90,8 +90,35 @@ class SensorDashboard(DataLogger):
                         ], color="success", inverse=True), width=6),
                     ]),
                     dbc.Row([
-                        dbc.Col(dcc.Graph(id="logging"),width=12)
+                        dbc.Col(
+                            dcc.Graph(id="logging"),
+                            width=12
+                        ),
+                        dbc.Col(
+                            html.Div(
+                                dcc.Checklist(
+                                    id="value_checklist",
+                                    options=[
+                                        {"label": "Geschwindigkeit", "value": "speed"},
+                                        {"label": "Richtung", "value": "direction"},
+                                        {"label": "Lenkwinkel", "value": "steering_angle"},
+                                        {"label": "Distanz", "value": "dist"}
+                                    ],
+                                    value=["speed","steering_angle"],   # initial ausgewählt
+                                    inline=True,
+                                    inputStyle={"marginRight":"5px"},
+                                    labelStyle={"marginRight":"20px"}
+                                ),
+                                style={"textAlign":"center"}
+                        ),
+                            width=12
+                        )                        
                     ]),
+                    dcc.Interval(
+                        id="interval-graph",
+                        interval=1000,
+                        n_intervals=0
+                    )
                 ]),
             ], id="tabs", active_tab="tab-steuerung"),
 
@@ -115,8 +142,11 @@ class SensorDashboard(DataLogger):
         def update_values(n_intervals):
             return(
                 html.Div(
-                f"IST:\t\t{self.car.speed} km/h\n\nmin:\t\t{self.car.speed_min} km/h\nmax:\t{self.car.speed_max} km/h\nmean:\t{round(self.car.speed_mean,0)} km/h",
-                style={"whiteSpace": "pre"}  # fpr Tabs (\t) und Zeilenumbrüche (\n)
+                    f"IST:\t\t{self.car.speed:.0f} km/h\n\n"
+                    f"min:\t\t{self.car.speed_min:.0f} km/h\n"
+                    f"max:\t{self.car.speed_max:.0f} km/h\n"
+                    f"mean:\t{self.car.speed_mean:.0f} km/h",
+                    style={"whiteSpace": "pre"}  # fpr Tabs (\t) und Zeilenumbrüche (\n)
                 ),
                 html.Div(
                 f"IST:\t\t{self.car.steering_angle}°",
@@ -134,10 +164,9 @@ class SensorDashboard(DataLogger):
             self.car.steering_angle = angle
             if self.is_driving:
                 self.car.drive()
-            self.write_log()
+            if self.car.state == 'drive':
+                self.write_log()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
-        
-
 
         @self.app.callback(
             Output("action-output", "children"),
@@ -189,17 +218,18 @@ class SensorDashboard(DataLogger):
 
         @self.app.callback(
             Output("logging", "figure"),
-            Input("interval-sync", "n_intervals")
+            Input("value_checklist", "value"),
+            Input("interval-sync","n_intervals")
         )
-        def update_graph(n):
+        def update_graph(selected_metrics, n_intervals):
             if self.car.logs.empty:
                 # Leere Grafik zurückgeben
                 fig = px.scatter(title="Noch keine Logs vorhanden")
             else:
                 df = self.car.logs.copy()
-                fig = px.line(df, x="time", y="speed", title="Geschwindigkeit über Zeit")
-                # Optional weitere Linien hinzufügen
-                fig.add_scatter(x=df["time"], y=df["steering_angle"], mode="lines", name="Lenkwinkel")
+                fig = px.line(df, x="time", y=selected_metrics, title="title",line_shape="hv")
+                fig.update_traces(mode='markers+lines')
+                fig.update_layout(xaxis_title="Zeit", yaxis_title="Wert")
             return fig
 
     def run(self):
