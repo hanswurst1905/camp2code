@@ -77,9 +77,9 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
             distance = self.get_safe_distance()
         while distance > 4 or self.direction == -1 :
 #            print(f'Distance: {distance}')
-#            self.calc_approach_speed(distance)
+            self.calc_approach_speed(distance)
             distance = self.get_safe_distance()
-#            self.drive() #vorwärts
+            self.drive() #vorwärts
         self.stop()
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
