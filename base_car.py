@@ -3,6 +3,7 @@ import time
 from tabulate import tabulate
 import sys
 import pandas as pd
+from datetime import datetime
 
 class BaseCar():
     '''
@@ -23,6 +24,14 @@ class BaseCar():
         self.frontwheels = FrontWheels()
         self._direction = 0
         self.log = ''
+        self.frontwheels.turn(self._steering_angle)
+        self.logs = pd.DataFrame()
+
+    def __del__(self):
+        #wird beim löschen des objects aufgerufen
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"logs/{timestamp}_baseCarLogging.log"
+        self.logs.to_csv(filename,index=False)
 
     @property
     def steering_angle(self):
@@ -73,7 +82,7 @@ class BaseCar():
             self.__speed_last = self.speed
             self.__steering_angle_last = self.steering_angle
             self.frontwheels.turn(self._steering_angle)
-            if self._speed > 0:
+            if self._speed > 0: 
                 self.backwheels.speed=self._speed
                 self.backwheels.forward()
                 self._direction = 1
@@ -136,20 +145,26 @@ class BaseCar():
         except KeyError as e:
             print(f'ein Fehler ist aufgetreten, Listen überprüfen -> KeyError {e}')
 
+class DataLogger():
+    def __init__(self,car):
+        
+        self.car = car
+
     def get_log(self):
         '''gibt Basislog als Dictionary zurück'''
         self.log = {
             "time": time.time(),
-            "speed": self.speed,
-            "direction": self.direction,
-            "steering_angle": self.steering_angle
+            "speed": self.car.speed,
+            "direction": self.car.direction,
+            "steering_angle": self.car.steering_angle
         }
         return self.log
 
     def write_log(self):
         '''schreibt die logging Daten'''
         log_entry = self.get_log()
-        print(log_entry)
+        self.car.logs = pd.concat([self.car.logs,pd.DataFrame([log_entry])], ignore_index=True)
+        print(self.car.logs.head())
 
 def menue():
     menue_data = [
@@ -165,9 +180,9 @@ def menue():
 
 def main():
     running = True
+    car = BaseCar()
     while running == True:
         selection = menue()
-        car = BaseCar()
         if selection in ['0','1']:
             car.fahrmodus(selection)
         elif selection == '2':
