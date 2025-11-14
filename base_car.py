@@ -29,8 +29,8 @@ class BaseCar():
         self._log_saved = False
 
     # def __del__(self):
-    #     #wird beim löschen des objects aufgerufen
-    #     # self.save_logs()
+        #wird beim löschen des objects aufgerufen
+        # self.save_logs()
     #     print('BaseCar wird gelöscht')
 
     def save_logs(self):
@@ -77,7 +77,18 @@ class BaseCar():
         except Exception as e:
             print(f'FEHLER!!! {e}\nSkript wird abgebrochen')
             sys.exit()
-
+    @property
+    def speed_min(self):
+        speed_min = self.logs["speed"].min()
+        return speed_min
+    @property
+    def speed_max(self):
+        speed_max = self.logs["speed"].max()
+        return speed_max
+    @property
+    def speed_mean(self):
+        speed_mean = self.logs["speed"].mean()
+        return speed_mean
     @property
     def direction(self):
         return self._direction
@@ -146,6 +157,7 @@ class BaseCar():
                 self.drive()
                 DataLogger(self).write_log()
                 time.sleep(time_sleep[i])
+            self.speed = 0
             self.stop()
 
         except FileNotFoundError as e:
