@@ -1,16 +1,23 @@
 import dash
 from dash import html, dcc, Output, Input, Dash
 import dash_bootstrap_components as dbc
-from base_car import BaseCar  # deine Car-Klasse mit speed & steering_angle
+from base_car import*
 
-class SensorDashboard:
-    def __init__(self, car):
+class SensorDashboard(DataLogger):
+    def __init__(self,car):
+        super().__init__(car)
         self.car = car
         self.is_driving = False  # Fahrstatus
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
         self._setup_layout()
         self._setup_callbacks()
+        self.dist = 5
 
+    def get_log(self):
+        base_log = super().get_log()
+        base_log["dist"] = self.dist
+        return base_log
+    
     def _setup_layout(self):
         self.app.layout = dbc.Container([
             html.H2("PiCar Dashboard", className="text-center my-4"),
@@ -44,7 +51,7 @@ class SensorDashboard:
                                 html.H4(id="angle-display", className="card-title"),
                                 dcc.Slider(
                                     id="angle-slider", min=45, max=135, step=1, value=self.car.steering_angle,
-                                    marks={45: "45°", 90: "90°", 135: "135°"}
+                                    marks={45: "45°",70: "70°", 90: "90°",110: "110°", 135: "135°"}
                                 )
                             ])
                         ], color="info", inverse=True), width=6),
@@ -135,6 +142,7 @@ class SensorDashboard:
             if button_id == "btn-drive":
                 self.is_driving = True
                 self.car.drive()
+                self.write_log()
                 return "Fahren gestartet."
             elif button_id == "btn-stop":
                 self.is_driving = False
@@ -152,6 +160,7 @@ class SensorDashboard:
                 return "under construction"
             elif button_id == "btn-driveMode4":
                 return "under construction"
+            
 
         # Intervall → Slider synchronisieren mit car-Werten
         @self.app.callback(
@@ -163,11 +172,16 @@ class SensorDashboard:
             return self.car.speed, self.car.steering_angle
 
     def run(self):
-        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True) #lokale IP Adresse
+        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
         
 
 
 if __name__ == "__main__":
     car = BaseCar()
     dashboard = SensorDashboard(car)
-    dashboard.run()
+    try:
+        dashboard.run()
+    except KeyboardInterrupt:
+        print("Interrupt by user")
+    finally:
+        car.save_logs() #speichert die logs
