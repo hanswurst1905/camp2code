@@ -9,7 +9,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         super().__init__()
         self._ultrasonic = Ultrasonic()
         self.__user_defined_speed = 0
-        self.__last_pos_distance = 400
+        self.__last_pos_distance = -1
 
     def get_distance(self) -> int:
         """ 
@@ -36,60 +36,64 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         
         return distance
     
-    def stop(self):
+    def stop(self):             # überschreibt die stop() Methode der Klasse BaseCar()
         '''führt neben dem stop von base_car auch den stop des Sonic Sensor aus'''
-        super().stop()
-        self._ultrasonic.stop()
+        super().stop()          # führt die geerbte stop() Methode der Klasse BaseCar() aus um Fahreug anzuhalten
+        self._ultrasonic.stop() # führt die stop() Methode der Klasse Ultrasonic um die Messwertaufnahme des US Senosr zu stoppen
 
     def calc_approach_speed(self, distance) -> None:
         """
             Geschwindigkeit beim Annähern an ein Hindernis reduzieren
             50 cm Abstand entspricht 100% Speed und 10cm 20%
         """
-        if distance > 50:
-            self._speed = self.__user_defined_speed
-            self.drive() #Update speed
+        if self.direction < 0 or self.speed < 0:
             return
-        elif distance < 10:
-            return
-        speed = distance * 2
-        abs_old_speed = abs(self.speed)
-        delta_speed = speed - abs_old_speed
-        if speed < abs_old_speed:
-            print(f"Hindernis erkannt reduziere Geschwindigkeit von {self.speed} auf {speed}")
-            self._speed = speed * abs_old_speed/self.speed
-        elif speed > abs_old_speed:
-            print(f"Hindernis entfernt sich, Geschwindigkeit von {self.speed} auf {speed}")
-            self._speed = (self._speed + min(delta_speed, 5 ) ) * abs_old_speed/self.speed   
-        self.drive() #Update speed
-        
-    @BaseCar.speed.setter
-    def speed(self, value):
-        super(SonicCar, self.__class__).speed.__set__(self, value)
-#        super().speed = value
-        self.__user_defined_speed = value
 
-    def fahrmodus3(self, speed = 50, steering_angle=60):
-        self.speed = speed
+        if (distance > 50) and (self.speed < self.__user_defined_speed):
+            self.speed += 1
+            return
+        calc_new_target_speed_from_lut = max(distance,10) * 2   # damit erfolg begrenzung aus Speed_min = 20
+        if calc_new_target_speed_from_lut < self.speed:
+            print(f"Hindernis erkannt reduziere Geschwindigkeit von {self.speed} auf {calc_new_target_speed_from_lut}")
+            self.speed = calc_new_target_speed_from_lut
+        elif self.__user_defined_speed > calc_new_target_speed_from_lut > self.speed:
+            self.speed +=1
+            print(f"Hindernis entfernt sich, Geschwindigkeit von {self.speed} auf {self.speed + 1}")            
+
+#     @BaseCar.speed.setter   # Dekorator überschreibt den aus der BaseCar geerbten Setter der Property "speed"
+#     def speed(self, value):
+# #       super().speed = value  # geht nicht weil super() ein Proxy Objekt zurückgibt ist nur für Methoden => speed ist aber eien Property
+# #       super(SonicCar, self.__class__).speed.__set__(self, value)      # super(SonicCar, self.__class__) => ruft im Elternteil von SonicCar (also BaseCar)
+#                                                                         # speed.__set__(self, value) => direkt den Setter von "speed" auf
+#         BaseCar.speed.__set__(self, value)                              # macht das gleich wie Zeile drüber6
+#         self.__user_defined_speed = value # neu hinzugefügtes Attribut
+
+    def fahrmodus_3(self, init_speed = 50, steering_angle=90):
+        self.__user_defined_speed = init_speed
+        self.speed = init_speed
         self.steering_angle = steering_angle
-        distance = self.get_safe_distance()
-        self.drive() #vorwärts
-        while distance > 4:
-            print(f'Distance: {distance}')
+        distance = -1
+        while distance == -1:
+            distance = self.get_safe_distance()
+        while distance > 4 or self.direction == -1 :
+#            print(f'Distance: {distance}')
             self.calc_approach_speed(distance)
             distance = self.get_safe_distance()
+            self.drive() #vorwärts
         self.stop()
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
-    def fahrmodus4(self, speed = 50, steering_angle = 90):
-        self.speed = speed
-        print(f'hier sollt der speed stehen: {self.speed}')
-        self.steering_angle = steering_angle
-        while self.get_distance() > 4:
-            if self.get_distance() < 10:
-                self.speed = 25
-            self.drive() #vorwärts
-        self.stop()
+    def fahrmodus_4(self, init_speed = 60, steering_angle = 90):
+        while True:
+            self.fahrmodus_3(init_speed,steering_angle)
+            self.steering_angle = 45
+            self.speed = -30
+            self.drive()
+            time.sleep(2)
+            self.stop()
+
+
+
 
 def menue():
     menue_data = [
@@ -113,13 +117,13 @@ def main():
         print(car.get_distance())
 #        car._ultrasonic.test()
         if selection == '1':
-            car.fahrmodus1()
+            car.fahrmodus_1()
         elif selection == '2':
-            car.fahrmodus2()
+            car.fahrmodus_2()
         elif selection == '3':
-            car.fahrmodus3()
+            car.fahrmodus_3()
         elif selection == '4':
-            car.fahrmodus4()
+            car.fahrmodus_4()
         elif selection == '5':
             running = False
     
