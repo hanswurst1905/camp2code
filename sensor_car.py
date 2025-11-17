@@ -3,6 +3,7 @@ import time
 from tabulate import tabulate
 import sys
 from sonic_car import SonicCar
+import pandas as pd
 
 class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def __init__(self):
@@ -16,11 +17,28 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     "ir_sens_postion": [0, 1, 2, 3, 4],
     "steering_direction": [45, 67.5, 90, 112.5, 135],
     "line_positon": ["right",  "right-midle", "midle",   "right-left",  "left"]}
+        data = [
+                [0,0,0,0,0,None],
+                [1,0,0,0,0,45],
+                [1,1,0,0,0,56.25],
+                [0,1,0,0,0,67.5],
+                [0,1,1,0,0,78.75],
+                [0,0,1,0,0,90],
+                [0,0,1,1,0,101.25],
+                [0,0,0,1,0,112.5],
+                [0,0,0,1,1,123.75],
+                [0,0,0,0,1,135]
+            ]
+        columns = ["ir_0","ir_1","ir_2","ir_3","ir_4","Lenkwinkel"]
+        self._posible_information = pd.DataFrame(data, columns=columns)
+
 
         irs = self.infrared.read_digital()
         if irs == [0,0,0,0,0]:
             print("no Line detected")
         elif irs == [1,0,0,0,0]:
+            print(f"right")
+        elif irs == [1,1,0,0,0]:
             print(f"right")
 
         
