@@ -49,7 +49,6 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         if self.direction < 0 or self.speed < 0:
             return
 
-        
         if (distance > 50) and (self.speed < self.__user_defined_speed):
             self.speed += 1
             return
@@ -69,7 +68,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
 #         BaseCar.speed.__set__(self, value)                              # macht das gleich wie Zeile drüber6
 #         self.__user_defined_speed = value # neu hinzugefügtes Attribut
 
-    def fahrmodus3(self, init_speed = 50, steering_angle=90):
+    def fahrmodus_3(self, init_speed = 50, steering_angle=90):
         self.__user_defined_speed = init_speed
         self.speed = init_speed
         self.steering_angle = steering_angle
@@ -84,9 +83,9 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         self.stop()
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
-    def fahrmodus4(self, init_speed = 60, steering_angle = 90):
+    def fahrmodus_4(self, init_speed = 60, steering_angle = 90):
         while True:
-            self.fahrmodus3(init_speed,steering_angle)
+            self.fahrmodus_3(init_speed,steering_angle)
             self.steering_angle = 45
             self.speed = -30
             self.drive()
@@ -118,13 +117,13 @@ def main():
         print(car.get_distance())
 #        car._ultrasonic.test()
         if selection == '1':
-            car.fahrmodus1()
+            car.fahrmodus_1()
         elif selection == '2':
-            car.fahrmodus2()
+            car.fahrmodus_2()
         elif selection == '3':
-            car.fahrmodus3()
+            car.fahrmodus_3()
         elif selection == '4':
-            car.fahrmodus4()
+            car.fahrmodus_4()
         elif selection == '5':
             running = False
     
