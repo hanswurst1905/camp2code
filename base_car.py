@@ -4,6 +4,9 @@ from tabulate import tabulate
 import sys
 import pandas as pd
 from datetime import datetime
+import json
+import re
+from pathlib import Path
 
 class BaseCar():
     '''
@@ -12,6 +15,7 @@ class BaseCar():
     Setter und Getter für Geschwindigkeit und Lenkwinkel
     '''
     def __init__(self):
+        self.__turning_offset = 0
         self.__steering_angle_min = 45
         self.__steering_angle_max = 135  
         self._steering_angle = 90
@@ -23,14 +27,17 @@ class BaseCar():
         self._speed_min = 0
         self._speed_mean = 0
         self.__speed_last = self._speed
+        self.__min_wheel_speed = 0
+        self.read_config_json()
         self.backwheels = BackWheels()
-        self.frontwheels = FrontWheels()
+        self.frontwheels = FrontWheels(self.__turning_offset)
         self._direction = 0
         self.log = ''
         self.frontwheels.turn(self._steering_angle)
         self.logs = pd.DataFrame()
         self._log_saved = False
         self._state = 'init'
+        
 
     # def __del__(self):
         #wird beim löschen des objects aufgerufen
@@ -99,6 +106,84 @@ class BaseCar():
     @property
     def state(self):
         return self._state
+
+    def start_calibration(self, serial_number):
+        print(f"Seriennummer: {serial_number} unbekannt. Starte Kalibrierung:\n ACHTUNG Bitte PiCAR anheben.")
+        self.frontwheels.turn(90)
+        new_config = dict()
+        new_config[serial_number] = dict()
+        turning_offset = 0
+        while True:
+            inp = input("Richte Lenkwinkel aus. Bitte relativen Offset eingeben.\n Ausrichtung mit 'Enter' bestätigen oder Kalibrierung mit 'a' abbrechen\n")
+            if inp.lower() == 'a':
+                return None
+            elif inp == "":
+                print("Offset ermittelt")
+                break
+            try:
+                inp = int(inp)
+            except ValueError:
+                continue
+            turning_offset += inp
+            self.frontwheels.turn(90+turning_offset)
+
+        min_wheel_speed = 0
+        speed_add = 9
+        while min_wheel_speed < 100:
+            inp = input("Ermittele minimal Geschwindigkeit zum losbrechen der Antriebe. \nBitte mit 'j' bestätigen, wenn sich beide Reifen in beide Richtungen bewegt haben. Ansonsten mit 'Enter' fortfahren. Abbruch: 'a'\n")
+            if inp.lower() == 'a':
+                return None
+            elif inp.lower() == 'j':
+                if speed_add > 1:
+                    min_wheel_speed -= 4
+                    speed_add -= 4
+                    print("Verringere Inkrement für genauere Erfassung")
+                else:
+                    break
+            elif inp == "":
+                min_wheel_speed +=speed_add
+
+            self.backwheels.speed = min_wheel_speed
+            self.backwheels.forward()
+            time.sleep(1)
+            self.backwheels.stop()
+            time.sleep(2)
+            self.backwheels.speed = min_wheel_speed
+            self.backwheels.backward()
+            time.sleep(1)
+            self.backwheels.stop()
+            
+        if min_wheel_speed >= 100:
+            print("Geschwindigkeit entspricht 100% -> Kalibrierung abgebrochen")
+            return None
+        new_config[serial_number]["turning_offset"] = turning_offset
+        new_config[serial_number]["forward_A"] = 0
+        new_config[serial_number]["forward_B"] = 0
+        new_config[serial_number]["min_wheel_speed"] = min_wheel_speed
+        return new_config
+
+
+    def read_config_json(self) -> None:
+        '''
+        reads serial number of raspberry pi and imports the corresponding setting. Starts calibration cycle if PiCar is unkown.
+        '''
+        REGEX = re.compile(r"^Serial\s+:\s+([0-9a-f]+)$", re.MULTILINE)
+        cpuinfo = Path("/proc/cpuinfo").read_text()
+        serial_number = REGEX.search(cpuinfo).group(1)
+        with open('./software/config.json') as f:
+            try:
+                config_file = json.load(f)
+            except json.JSONDecodeError:
+                config_file = dict()
+        if not (serial_number in config_file):
+            new_config = self.start_calibration(serial_number)
+            if new_config != None:
+                config_file.update(new_config)
+                with open('./software/config.json','w') as f:
+                    json.dump(config_file, f)
+
+        self.__turning_offset=config_file[serial_number]["turning_offset"]
+        self.__min_wheel_speed=config_file[serial_number]["min_wheel_speed"]
 
     def drive(self):
         '''
