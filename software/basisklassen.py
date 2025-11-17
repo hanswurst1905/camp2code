@@ -529,7 +529,6 @@ class Servo(object):
                 raise ValueError("Servo \"{0}\" turn angle \"{1}\" is not in (0, 180).".format(self.channel, angle))
         angle += self.offset
         val = self._angle_to_analog(angle)
-        print(f"Folgender Winkel gesetzt {angle} und 12 bit value {val}")
         #val += self.offset
         self.pwm.write(self.channel, 0, val)
         self._debug_('Turn angle = %d' % angle)

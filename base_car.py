@@ -28,9 +28,10 @@ class BaseCar():
         self._speed_mean = 0
         self.__speed_last = self._speed
         self.__min_wheel_speed = 0
-        self.read_config_json()
         self.backwheels = BackWheels()
-        self.frontwheels = FrontWheels(self.__turning_offset)
+        self.frontwheels = FrontWheels()
+        self.read_config_json()
+        self.frontwheels._servo.offset = self.__turning_offset
         self._direction = 0
         self.log = ''
         self.frontwheels.turn(self._steering_angle)
