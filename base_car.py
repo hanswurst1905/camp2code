@@ -1,3 +1,5 @@
+
+
 from software.basisklassen import*
 import time
 from tabulate import tabulate
@@ -7,6 +9,7 @@ from datetime import datetime
 import json
 import re
 from pathlib import Path
+import statistics
 
 class BaseCar():
     '''
@@ -23,9 +26,6 @@ class BaseCar():
         self.__speed_min = -100
         self.__speed_max = 100
         self._speed = 0
-        self._speed_max = 0
-        self._speed_min = 0
-        self._speed_mean = 0
         self.__speed_last = self._speed
         self.__min_wheel_speed = 0
         self.backwheels = BackWheels()
@@ -39,11 +39,9 @@ class BaseCar():
         self._log_saved = False
         self._state = 'init'
         
+        self.__time_init = time.time()
+        self._drive_distance = 0
 
-    # def __del__(self):
-        #wird beim löschen des objects aufgerufen
-        # self.save_logs()
-    #     print('BaseCar wird gelöscht')
 
     def save_logs(self):
         print(f'save log für: {id(self)}')
@@ -89,24 +87,23 @@ class BaseCar():
         except Exception as e:
             print(f'FEHLER!!! {e}\nSkript wird abgebrochen')
             sys.exit()
-    @property
-    def speed_min(self):
-        self._speed_min = self.logs["speed"].min()
-        return self._speed_min
-    @property
-    def speed_max(self):
-        self._speed_max = self.logs["speed"].max()
-        return self._speed_max
-    @property
-    def speed_mean(self):
-        self._speed_mean = self.logs["speed"].mean()
-        return self._speed_mean
+
     @property
     def direction(self):
         return self._direction
     @property
     def state(self):
         return self._state
+    @property
+    def drive_time(self):
+        self._drive_time = time.time() - self.__time_init
+        print ("self.drive_time", self._drive_time) 
+        return self._drive_time
+    @property
+    def drive_distance(self):
+        self._drive_distance = self.drive_time * self._speed
+        print ("Distance", self._drive_distance)
+        return self._drive_distance
 
     def start_calibration(self, serial_number):
         print(f"Seriennummer: {serial_number} unbekannt. Starte Kalibrierung:\n ACHTUNG Bitte PiCAR anheben.")
@@ -192,10 +189,11 @@ class BaseCar():
         dazu können BaseCar().speed und BaseCar().steering_angle beschrieben werden
         '''
         self._state = 'drive'
-        if (self.__speed_last != self.speed) or (self.__steering_angle_last != self.steering_angle):
-            self.__speed_last = self.speed
+        if self.__steering_angle_last != self.steering_angle:
             self.__steering_angle_last = self.steering_angle
             self.frontwheels.turn(self._steering_angle)
+        if self.__speed_last != self.speed:
+            self.__speed_last = self.speed
             if self._speed > 0: 
                 self.backwheels.speed=self._speed
                 self.backwheels.forward()
@@ -208,9 +206,8 @@ class BaseCar():
                 self.backwheels.speed=self._speed
                 self.backwheels.forward()
                 self._direction = 0
-            print(f'speed = {self._speed}, steering_angle = {self._steering_angle}, direction = {self._direction}')
-            # logger = DataLogger(self)
-            # logger.write_log()
+            print(f'self.state = {self.state}, speed_last = {self.__speed_last}, drive_time = {self.drive_time}')
+
 
     def stop(self):
         self.speed = 0
@@ -283,7 +280,7 @@ class DataLogger():
         '''schreibt die logging Daten'''
         log_entry = self.get_log()
         self.car.logs = pd.concat([self.car.logs,pd.DataFrame([log_entry])], ignore_index=True)
-        print(self.car.logs.head())
+        # print(self.car.logs.head())
 
 def menue():
     menue_data = [
