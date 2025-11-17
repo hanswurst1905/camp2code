@@ -184,7 +184,7 @@ class DataLogger():
         '''gibt Basislog als Dictionary zurück'''
         self.log = {
             "time": time.time(),
-            "speed": self.car.speed,
+            "speed": abs(self.car.speed),
             "direction": self.car.direction,
             "steering_angle": self.car.steering_angle
         }
