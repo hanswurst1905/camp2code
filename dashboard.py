@@ -1,10 +1,10 @@
 import dash
 from dash import html, dcc, Output, Input, Dash, State
 import dash_bootstrap_components as dbc
-from base_car import*
+from base_car import DataLogger
 import plotly.express as px
 from sonic_car import*
-# import threading
+import threading
 
 class SensorDashboard(DataLogger):
     def __init__(self,car):
