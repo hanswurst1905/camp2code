@@ -178,7 +178,9 @@ class BaseCar():
             if new_config != None:
                 config_file.update(new_config)
                 with open('./software/config.json','w') as f:
-                    json.dump(config_file, f)
+                    json.dump(config_file, f, sort_keys=True, indent=4)
+            else:
+                return
 
         self.__turning_offset=config_file[serial_number]["turning_offset"]
         self.__min_wheel_speed=config_file[serial_number]["min_wheel_speed"]

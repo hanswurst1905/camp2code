@@ -4,11 +4,15 @@ from tabulate import tabulate
 import sys
 from sonic_car import SonicCar
 import pandas as pd
+import re
+from pathlib import Path
 
 class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def __init__(self):
         super().__init__()
-        self.infrared = Infrared(references=[134, 128, 143, 137, 121])
+        self.infrared = Infrared()
+        self.__calibrated_reference = self.read_infrared_calibration_from_config()
+        self.infrared.set_references(self.__calibrated_reference)
         self.line_pos = [
                     [0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0],
@@ -16,7 +20,57 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                     ]
         self.line_pos_max_len = 3    # Anzahl der gespeicherten Werte
 
-    def get_line_pos(self):
+
+    def read_infrared_calibration_from_config(self) -> list:
+        with open('./software/config.json') as f:
+            try:
+                config_file = json.load(f)
+            except json.JSONDecodeError:
+                config_file = dict()
+        REGEX = re.compile(r"^Serial\s+:\s+([0-9a-f]+)$", re.MULTILINE)
+        cpuinfo = Path("/proc/cpuinfo").read_text()
+        serial_number = REGEX.search(cpuinfo).group(1)
+        if not (serial_number in config_file):
+            new_config = self.start_calibration(serial_number)
+            config_file.update(new_config)
+        infrared_keys = ["infrared_calibrated_reference_0","infrared_calibrated_reference_1","infrared_calibrated_reference_2","infrared_calibrated_reference_3","infrared_calibrated_reference_4"]
+        if  not all(key in config_file[serial_number] for key in infrared_keys):
+            infrared_reference = self.calibrate_infrared()
+            if infrared_reference is None:
+                return [300, 300, 300, 300, 300]
+            for i in range(5):
+                config_file[serial_number][infrared_keys[i]] = infrared_reference[i]
+                i += 1
+            with open('./software/config.json','w') as f:
+                    json.dump(config_file, f, sort_keys=True, indent=4)
+        else:
+            infrared_reference = list()
+            for i in range(5):
+                infrared_reference.append(config_file[serial_number][infrared_keys[i]])
+        return infrared_reference
+
+    def calibrate_infrared(self) -> list:
+        print("======================================== Starte Kalibrierung der Infratorsensoren ========================================\n")
+        print("Ermitellung von optimaler Poti position. Bitte PiCar auf den Boden stellen und eine schwarze Linie kleben.")
+        print("Bitte die Schritte im Terminal mit einem Enter bestätigen um fortzufahren. Abbruch: a. Kalibrierung übernehmen: j")
+        print("Es wird empfohlen den Poti auf einen der beiden Endanschläge zu stellen und mit maximal 1/4 Umdrehung neue Vergleichswerte ermitteln")
+        while True:
+            in1 = input("Roboter auf den Untergrund stellen. Abbruch: a. Kalibrierung übernehmen: j\t")
+            if in1.lower() == "a":
+                print("\n======================================== Abbruch: Es werden die Standardwerte (300) verwendet ========================================\n")
+                return None
+            elif in1.lower() == "j":
+                return (np.array(hell) + np.array(dunkel)) / 2
+            hell = self.infrared.read_analog()
+            input("Roboter auf die geklebte Linie stellen\t")
+            dunkel = self.infrared.read_analog()
+            diff = np.array(object=hell) - np.array(dunkel)
+            print(*diff, sep='\t')
+            print(f"mittlerer Hell-Dunkel-Differenz {np.mean(diff)}")
+        
+
+
+      def get_line_pos(self):
         new_value = self.infrared.read_digital()  # Neuen Wert lesen
         # Neuen Wert vorne einfügen
         self.line_pos.insert(0, new_value)
@@ -130,6 +184,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
 
 
 
+
         
         
 
@@ -171,7 +226,7 @@ def main():
             car.fahrmodus_6()
         elif selection == '7':
             running = False
-    
+
 
 if __name__ == "__main__":
     main()
