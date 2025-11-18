@@ -3,16 +3,17 @@ from dash import html, dcc, Output, Input, Dash
 import dash_bootstrap_components as dbc
 from base_car import*
 import plotly.express as px
+from sonic_car import*
 
 class SensorDashboard(DataLogger):
     def __init__(self,car):
         super().__init__(car)
         self.car = car
-        self.is_driving = False  # Fahrstatus
+        # self.is_driving = False  # Fahrstatus
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
         self._setup_layout()
         self._setup_callbacks()
-        self.dist = 5
+        # self.dist = 5
         self.speed_mean = 0
         self.speed_min = 0
         self.speed_max = 0
@@ -20,7 +21,8 @@ class SensorDashboard(DataLogger):
 
     def get_log(self):
         base_log = super().get_log()
-        base_log["dist"] = self.dist
+        dist = self.car.get_safe_distance()
+        base_log["distance"] = dist
         return base_log
     
     def _setup_layout(self):
@@ -70,6 +72,15 @@ class SensorDashboard(DataLogger):
                         dbc.Col(dbc.Button("Fahrmodus_3", id="btn-driveMode3", color="success", className="title"), width=3),
                         dbc.Col(dbc.Button("Fahrmodus_4", id="btn-driveMode4", color="success", className="title"), width=3),
                 ]),
+                html.Div(style={"height":"30px"}),
+                    dbc.Row([
+                        dbc.Col(dbc.Card([
+                        dbc.CardHeader("Fahrzeugstatus"),
+                        dbc.CardBody([
+                        html.H4(id="Messwert3", className="title")
+                        ])
+                    ], color="success", inverse=True, outline=False), width=6),
+                    ])
             ]),
 
 #########################
@@ -140,19 +151,21 @@ class SensorDashboard(DataLogger):
         @self.app.callback(
                 Output("Messwert","children"),
                 Output("Messwert2","children"),
+                Output("Messwert3","children"),
                 Input("interval-sync","n_intervals")
         )
         def update_values(n_intervals):
-            if car.state == 'drive' and not car.logs.empty:
+            speed = self.car.speed
+            if self.car.state == 'drive' and not self.car.logs.empty:
                 self.write_log()
-                print(f"car.state: {car.state} --> logging")
-                self.speed_mean = car.logs["speed"].mean()
-                self.speed_min = car.logs["speed"].min()
-                self.speed_max = car.logs["speed"].max()
-            
+                self.speed_mean = abs(self.car.logs["speed"]).mean()
+                self.speed_min = self.car.logs["speed"].min()
+                self.speed_max = self.car.logs["speed"].max()
+                speed=self.car.speed
+            state = self.car.state
             return(
                 html.Div(
-                    f"IST:\t\t{self.car.speed:.0f} km/h\n\n"
+                    f"IST:\t\t{speed:.0f} km/h\n\n"
                     f"min:\t\t{self.speed_min:.0f} km/h\n"
                     f"max:\t{self.speed_max:.0f} km/h\n"
                     f"mean:\t{self.speed_mean:.0f} km/h",
@@ -161,7 +174,13 @@ class SensorDashboard(DataLogger):
                 html.Div(
                 f"IST:\t\t{self.car.steering_angle}°",
                 style={"whiteSpace": "pre"}
-            ))
+                ),
+                html.Div(
+                    f"state = {state}\n"
+                    f"distance = {self.car.get_safe_distance()}",
+                    style={"whiteSpace": "pre"}
+                )
+            )
         # Sliderbewegung → Werte setzen + ggf. fahren
         @self.app.callback(
             Output("speed-display", "children"),
@@ -172,7 +191,7 @@ class SensorDashboard(DataLogger):
         def update_values(speed, angle):
             self.car.speed = speed
             self.car.steering_angle = angle
-            if self.is_driving:
+            if car.state in ['ready','drive']:
                 self.car.drive()
                 pass
             if self.car.state == 'drive':
@@ -196,12 +215,14 @@ class SensorDashboard(DataLogger):
                 return ""
             button_id = ctx.triggered[0]["prop_id"].split(".")[0]
             if button_id == "btn-drive":
-                self.is_driving = True
+                # self.is_driving = True
+                car.state = 'ready'
                 self.car.drive()
                 self.write_log()
                 return "Fahren gestartet."
             elif button_id == "btn-stop":
-                self.is_driving = False
+                # self.is_driving = False
+                car.state = 'stop'
                 self.car.speed = 0
                 self.car.steering_angle = 90
                 self.car.stop()
@@ -214,7 +235,7 @@ class SensorDashboard(DataLogger):
                 self.car.fahrmodus_2()
                 return "Fahrmodus_2 gestartet"
             elif button_id == "btn-driveMode3":
-                return "under construction"
+                self.car.fahrmodus_3()
             elif button_id == "btn-driveMode4":
                 return "under construction"
             
@@ -250,7 +271,7 @@ class SensorDashboard(DataLogger):
 
 
 if __name__ == "__main__":
-    car = BaseCar()
+    car = SonicCar()
     dashboard = SensorDashboard(car)
     try:
         dashboard.run()
