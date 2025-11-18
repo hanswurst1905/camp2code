@@ -1,9 +1,10 @@
 import dash
-from dash import html, dcc, Output, Input, Dash
+from dash import html, dcc, Output, Input, Dash, State
 import dash_bootstrap_components as dbc
 from base_car import*
 import plotly.express as px
 from sonic_car import*
+# import threading
 
 class SensorDashboard(DataLogger):
     def __init__(self,car):
@@ -18,11 +19,13 @@ class SensorDashboard(DataLogger):
         self.speed_min = 0
         self.speed_max = 0
         self.drive_time = 0
+        self.ultrasonic_distance = 0
+        self._thread = None
 
     def get_log(self):
         base_log = super().get_log()
         dist = self.car.get_safe_distance()
-        base_log["distance"] = dist
+        base_log["ultrasonic_distance"] = dist
         return base_log
     
     def _setup_layout(self):
@@ -148,21 +151,29 @@ class SensorDashboard(DataLogger):
 ############################################################
 
     def _setup_callbacks(self):
-        @self.app.callback(
+        @self.app.callback([
                 Output("Messwert","children"),
                 Output("Messwert2","children"),
                 Output("Messwert3","children"),
-                Input("interval-sync","n_intervals")
+        ],
+                [Input("interval-sync","n_intervals")],
+                [State("interval-sync","interval")]
         )
-        def update_values(n_intervals):
+        def update_values(n_intervals,interval_ms):
             speed = self.car.speed
-            if self.car.state == 'drive' and not self.car.logs.empty:
-                self.write_log()
+            # if self.car.state == 'drive' and not self.car.logs.empty:
+            if not self.car.logs.empty:
+                if self.car.state == 'drive':
+                    self.write_log()
+                    self.drive_time = self.drive_time + interval_ms / 1000
                 self.speed_mean = abs(self.car.logs["speed"]).mean()
                 self.speed_min = self.car.logs["speed"].min()
                 self.speed_max = self.car.logs["speed"].max()
                 speed=self.car.speed
-            state = self.car.state
+                
+
+            self.state = self.car.state
+            self.ultrasonic_distance=self.car.get_safe_distance()
             return(
                 html.Div(
                     f"IST:\t\t{speed:.0f} km/h\n\n"
@@ -176,8 +187,9 @@ class SensorDashboard(DataLogger):
                 style={"whiteSpace": "pre"}
                 ),
                 html.Div(
-                    f"state = {state}\n"
-                    f"distance = {self.car.get_safe_distance()}",
+                    f"state = {self.state}\n"
+                    f"ultrasonic distance = {self.ultrasonic_distance}\n"
+                    f"drive time =  {self.drive_time:.0f}",
                     style={"whiteSpace": "pre"}
                 )
             )
@@ -230,11 +242,17 @@ class SensorDashboard(DataLogger):
                 return "Fahrzeug gestoppt."
             elif button_id == "btn-driveMode1":
                 self.car.fahrmodus_1()
+                # self._thread = threading.Thread(target=self.car.fahrmodus_1)
+                # self._thread.start()
                 return "Fahrmodus_1 gestartet"
             elif button_id == "btn-driveMode2":
                 self.car.fahrmodus_2()
+                # self._thread = threading.Thread(target=self.car.fahrmodus_2)
+                # self._thread.start()
                 return "Fahrmodus_2 gestartet"
             elif button_id == "btn-driveMode3":
+                # self._thread = threading.Thread(target=self.car.fahrmodus_3)
+                # self._thread.start()
                 self.car.fahrmodus_3()
             elif button_id == "btn-driveMode4":
                 return "under construction"
