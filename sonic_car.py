@@ -3,6 +3,7 @@ import time
 from tabulate import tabulate
 import sys
 from base_car import BaseCar
+import threading
 
 class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
     def __init__(self):
@@ -10,6 +11,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         self._ultrasonic = Ultrasonic()
         self.__user_defined_speed = 0
         self.__last_pos_distance = -1
+        self._gpio_lock = threading.Lock()
 
     def get_distance(self) -> int:
         """ 
@@ -17,12 +19,14 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         Bei Sensorfehler "-3: Negative distance" wird ein Exception geschmissen.
         Restliche Sensorfehler werden durch den zuletzt bekannten Wert ersetzt oder bei fehlender Historie durch 400 cm.
         """
-        distance = self._ultrasonic.distance()
-        if distance == -3:
-            raise Exception("Sensorfehler: negative Distanz")
-        elif distance > 0:
-            self.__last_pos_distance = distance
-        return self.__last_pos_distance
+        with self._gpio_lock:
+            distance = self._ultrasonic.distance()
+            if distance == -3:
+                print("fehler -3")
+                raise Exception("Sensorfehler: negative Distanz")
+            elif distance > 0:
+                self.__last_pos_distance = distance
+            return self.__last_pos_distance
 
     def get_safe_distance(self) -> int:
         """
@@ -30,9 +34,9 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         """
         try:
             distance = self.get_distance()
-        except:
+        except Exception as e:
             self.stop()
-            print("Fehler vom Ultraschallsensor")
+            print(f"Fehler vom Ultraschallsensor: {e}")
         
         return distance
     
