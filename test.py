@@ -1,6 +1,7 @@
 from base_car import*
 import time
 
+
 class Test(DataLogger):
     def __init__(self,car):
         super().__init__(car)
@@ -10,7 +11,6 @@ class Test(DataLogger):
         base_log = super().get_log()
         base_log["dist"] = self.dist
         return base_log
-    
 
 def fahrmodus_test(car):
     car.speed = 30
@@ -21,13 +21,18 @@ def fahrmodus_test(car):
 
 def main():
     car = BaseCar()
+    test_frontwheels(car)
     # fahrmodus_test(car) 
     # car.fahrmodus1(selection='1')
-    a=Test(car)
-    a.write_log()
+    # a=Test(car)
+    # a.write_log()
     # car.fahrmodus_1()
     
     # print(a)
+
+def test_frontwheels(car):
+    car.frontwheels.turn(70)
+    # FrontWheels.turn(angle=70)
 
 if __name__ == "__main__":
     main()
