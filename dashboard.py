@@ -1,15 +1,18 @@
 import dash
-from dash import html, dcc, Output, Input, Dash, State
+from dash import html, dcc, Output, Input, Dash, State, dash_table
 import dash_bootstrap_components as dbc
 from base_car import DataLogger
 import plotly.express as px
 from sonic_car import*
 import threading
+import os
 
 class SensorDashboard(DataLogger):
     def __init__(self,car):
         super().__init__(car)
         self.car = car
+        logs_path = "logs"
+        self.available_logs = [f for f in os.listdir(logs_path) if f.endswith(".log")]
         # self.is_driving = False  # Fahrstatus
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
         self._setup_layout()
@@ -21,6 +24,8 @@ class SensorDashboard(DataLogger):
         self.drive_time = 0
         self.ultrasonic_distance = 0
         self._thread = None
+        self.drive_distance = 0
+
 
     def get_log(self):
         base_log = super().get_log()
@@ -70,11 +75,19 @@ class SensorDashboard(DataLogger):
                     ]),
                     dbc.Row([
                         html.Div(style={"height": "30px"}),
-                        dbc.Col(dbc.Button("Fahrmodus_1", id="btn-driveMode1", color="success", className="title"), width=3),
-                        dbc.Col(dbc.Button("Fahrmodus_2", id="btn-driveMode2", color="success", className="title"), width=3),
-                        dbc.Col(dbc.Button("Fahrmodus_3", id="btn-driveMode3", color="success", className="title"), width=3),
-                        dbc.Col(dbc.Button("Fahrmodus_4", id="btn-driveMode4", color="success", className="title"), width=3),
+                        dbc.Col(dbc.Button("Fahrmodus_1", id="btn-driveMode1", color="success", className="title"), width=2),
+                        dbc.Col(dbc.Button("Fahrmodus_2", id="btn-driveMode2", color="success", className="title"), width=2),
+                        dbc.Col(dbc.Button("Fahrmodus_3", id="btn-driveMode3", color="success", className="title"), width=2),
                 ]),
+
+                    dbc.Row([
+                        html.Div(style={"height": "30px"}),
+                        dbc.Col(dbc.Button("Fahrmodus_4", id="btn-driveMode4", color="success", className="title"), width=2),
+                        dbc.Col(dbc.Button("Fahrmodus_5", id="btn-driveMode5", color="success", className="title"), width=2),
+                        dbc.Col(dbc.Button("Fahrmodus_6", id="btn-driveMode6", color="success", className="title"), width=2),
+                        dbc.Col(dbc.Button("Fahrmodus_7", id="btn-driveMode7", color="success", className="title"), width=2),
+                ]),
+
                 html.Div(style={"height":"30px"}),
                     dbc.Row([
                         dbc.Col(dbc.Card([
@@ -138,6 +151,59 @@ class SensorDashboard(DataLogger):
                         n_intervals=0
                     )
                 ]),
+
+#########################
+# Tab 3: Logs
+#########################
+
+                dbc.Tab(label="Logs", tab_id="tab-logs", children=[
+                    html.Div(style={"height": "30px"}),
+
+                    dbc.Row([
+                        dbc.Col(dbc.Card([
+                            dbc.CardHeader("Log-Auswahl"),
+                            dbc.CardBody([
+                                dcc.Dropdown(
+                                    id="log-dropdown",
+                                    options=[
+                                        {"label": fname, "value": fname}
+                                        for fname in self.available_logs  # Liste der CSV-Dateien im logs-Verzeichnis
+                                    ],
+                                    placeholder="Bitte Log-Datei auswählen",
+                                    value=None,
+                                    clearable=False
+                                )
+                            ])
+                        ], color="info", outline=True), width=6),
+                    ]),
+
+                    html.Div(style={"height": "30px"}),
+
+                    dbc.Row([
+                        dbc.Col(dbc.Card([
+                            dbc.CardHeader("Log-Daten"),
+                            dbc.CardBody([
+                                # Tabelle zur Anzeige der CSV-Inhalte
+                                dash_table.DataTable(
+                                    id="log-table",
+                                    columns=[],
+                                    data=[],
+                                    page_size=10,
+                                    style_table={"overflowX": "auto"},
+                                    style_cell={"textAlign": "left"}
+                                )
+                            ])
+                        ], color="secondary", outline=True), width=12),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dcc.Graph(id="logging_logs"),
+                            width=12
+                        ),                      
+                    ]),
+                ])
+
+
             ], id="tabs", active_tab="tab-steuerung"),
 
             html.Div(id="action-output", className="mt-3 text-center"),
@@ -145,6 +211,7 @@ class SensorDashboard(DataLogger):
             # Intervall zur Synchronisierung der Slider mit car-Werten
             dcc.Interval(id="interval-sync", interval=1000, n_intervals=0)
         ], fluid=True)
+        
 
 ############################################################
 # Callbacks
@@ -166,6 +233,7 @@ class SensorDashboard(DataLogger):
                 if self.car.state == 'drive':
                     self.write_log()
                     self.drive_time = self.drive_time + interval_ms / 1000
+                    self.drive_distance = self.drive_distance + abs(self.car.speed) * 1/3.6
                 self.speed_mean = abs(self.car.logs["speed"]).mean()
                 self.speed_min = self.car.logs["speed"].min()
                 self.speed_max = self.car.logs["speed"].max()
@@ -188,8 +256,9 @@ class SensorDashboard(DataLogger):
                 ),
                 html.Div(
                     f"state = {self.state}\n"
-                    f"ultrasonic distance = {self.ultrasonic_distance}\n"
-                    f"drive time =  {self.drive_time:.0f}",
+                    f"ultrasonic distance = {self.ultrasonic_distance} cm\n"
+                    f"drive time =  {self.drive_time:.0f} s\n"
+                    f"drive distance = {self.drive_distance:.1f} m",
                     style={"whiteSpace": "pre"}
                 )
             )
@@ -227,13 +296,11 @@ class SensorDashboard(DataLogger):
                 return ""
             button_id = ctx.triggered[0]["prop_id"].split(".")[0]
             if button_id == "btn-drive":
-                # self.is_driving = True
                 car.state = 'ready'
                 self.car.drive()
                 self.write_log()
                 return "Fahren gestartet."
             elif button_id == "btn-stop":
-                # self.is_driving = False
                 car.state = 'stop'
                 self.car.speed = 0
                 self.car.steering_angle = 90
@@ -247,15 +314,21 @@ class SensorDashboard(DataLogger):
                 return "Fahrmodus_1 gestartet"
             elif button_id == "btn-driveMode2":
                 self.car.fahrmodus_2()
-                # self._thread = threading.Thread(target=self.car.fahrmodus_2)
-                # self._thread.start()
                 return "Fahrmodus_2 gestartet"
             elif button_id == "btn-driveMode3":
-                # self._thread = threading.Thread(target=self.car.fahrmodus_3)
-                # self._thread.start()
                 self.car.fahrmodus_3()
+                return 'Fahrmodus_3 gestartet'
             elif button_id == "btn-driveMode4":
-                return "under construction"
+                self.car.fahrmodus_4()
+            elif button_id == "btn-driveMode5":
+                # self.car.fahrmodus_5()
+                return 'under construction'
+            elif button_id == "btn-driveMode6":
+                # self.car.fahrmodus_6()
+                return 'under construction'
+            elif button_id == "btn-driveMode7":
+                # self.car.fahrmodus_7()
+                return 'under construction'
             
 
         # Intervall → Slider synchronisieren mit car-Werten
@@ -282,6 +355,36 @@ class SensorDashboard(DataLogger):
                 fig.update_traces(mode='markers+lines')
                 fig.update_layout(xaxis_title="Zeit", yaxis_title="Wert")
             return fig
+        
+        @self.app.callback(
+            Output("log-table", "columns"),
+            Output("log-table", "data"),
+            Output("logging_logs","figure"),
+            Input("log-dropdown", "value"),
+            # Input("value_checklist", "value")
+        )
+        def update_log_table(selected_file):
+            if selected_file is None:
+                return [], [], {}
+
+            import pandas as pd
+            import plotly.express as px
+
+            df = pd.read_csv(f"logs/{selected_file}")
+
+            columns = [{"name": c, "id": c} for c in df.columns]
+            data = df.to_dict("records")
+
+            # Graph mit den ausgewählten Spalten
+            # fig = px.line(df, x=df.index, y=df.speed, title=f"Log: {selected_file}")
+            fig = px.line(
+                df,
+                x=df.index,
+                y=df.columns,
+                title=f'Log:{selected_file}'
+            )
+            return columns, data, fig
+
 
     def run(self):
         self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
