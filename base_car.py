@@ -47,8 +47,9 @@ class BaseCar():
             print('log bereits gespeichert')
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"logs/{timestamp}_baseCarLogging.log"
-        self.logs.to_csv(filename,index=False)
-        self._log_saved = True
+        if not self.logs.empty:
+            self.logs.to_csv(filename,index=False)
+            self._log_saved = True
 
     @property
     def steering_angle(self):
