@@ -6,6 +6,7 @@ import plotly.express as px
 from sonic_car import*
 import threading
 import os
+import pandas as pd
 
 class SensorDashboard(DataLogger):
     def __init__(self,car):
@@ -133,7 +134,7 @@ class SensorDashboard(DataLogger):
                                         {"label": "Geschwindigkeit", "value": "speed"},
                                         {"label": "Richtung", "value": "direction"},
                                         {"label": "Lenkwinkel", "value": "steering_angle"},
-                                        {"label": "Distanz", "value": "dist"}
+                                        {"label": "Distanz", "value": "ultrasonic_distance"}
                                     ],
                                     value=["speed","steering_angle"],   # initial ausgewählt
                                     inline=True,
@@ -145,11 +146,11 @@ class SensorDashboard(DataLogger):
                             width=12
                         )                        
                     ]),
-                    dcc.Interval(
-                        id="interval-graph",
-                        interval=1000,
-                        n_intervals=0
-                    )
+                    dbc.Row([
+                        html.Div(style={"height": "30px"}),
+                        dbc.Col(dbc.Button("save log", id="btn-saveLog", color="success", className="title"), width=2),
+                ]),
+                    dcc.Interval(id="interval-graph",interval=1000,n_intervals=0)
                 ]),
 
 #########################
@@ -288,9 +289,10 @@ class SensorDashboard(DataLogger):
             Input("btn-driveMode2","n_clicks"),
             Input("btn-driveMode3","n_clicks"),
             Input("btn-driveMode4","n_clicks"),
+            Input("btn-saveLog","n_clicks"),
             prevent_initial_call=True
         )
-        def handle_buttons(drive_clicks, stop_clicks, driveMode1_clicks, driveMode2_clicks,driveMode3_clicks,driveMode4_clicks):
+        def handle_buttons(drive_clicks, stop_clicks, driveMode1_clicks, driveMode2_clicks,driveMode3_clicks,driveMode4_clicks,saveLog_clicks):
             ctx = dash.callback_context
             if not ctx.triggered:
                 return ""
@@ -329,6 +331,8 @@ class SensorDashboard(DataLogger):
             elif button_id == "btn-driveMode7":
                 # self.car.fahrmodus_7()
                 return 'under construction'
+            elif button_id == "btn-saveLog":
+                self.car.save_logs()
             
 
         # Intervall → Slider synchronisieren mit car-Werten
@@ -367,22 +371,11 @@ class SensorDashboard(DataLogger):
             if selected_file is None:
                 return [], [], {}
 
-            import pandas as pd
-            import plotly.express as px
-
             df = pd.read_csv(f"logs/{selected_file}")
 
             columns = [{"name": c, "id": c} for c in df.columns]
             data = df.to_dict("records")
-
-            # Graph mit den ausgewählten Spalten
-            # fig = px.line(df, x=df.index, y=df.speed, title=f"Log: {selected_file}")
-            fig = px.line(
-                df,
-                x=df.index,
-                y=df.columns,
-                title=f'Log:{selected_file}'
-            )
+            fig = px.line(df, x=df.index, y=df.columns, title=f'Log:{selected_file}', line_shape="hv")
             return columns, data, fig
 
 
