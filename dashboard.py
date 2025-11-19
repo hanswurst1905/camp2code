@@ -289,19 +289,40 @@ class SensorDashboard(DataLogger):
             Input("btn-driveMode2","n_clicks"),
             Input("btn-driveMode3","n_clicks"),
             Input("btn-driveMode4","n_clicks"),
+            Input("btn-driveMode5","n_clicks"),
+            Input("btn-driveMode6","n_clicks"),
+            Input("btn-driveMode7","n_clicks"),
             Input("btn-saveLog","n_clicks"),
             prevent_initial_call=True
         )
-        def handle_buttons(drive_clicks, stop_clicks, driveMode1_clicks, driveMode2_clicks,driveMode3_clicks,driveMode4_clicks,saveLog_clicks):
+        def handle_buttons(drive_clicks,
+                           stop_clicks,
+                           driveMode1_clicks,
+                           driveMode2_clicks,
+                           driveMode3_clicks,
+                           driveMode4_clicks,
+                           driveMode5_clicks,
+                           driveMode6_clicks,
+                           driveMode7_clicks,
+                           saveLog_clicks
+                           ):
             ctx = dash.callback_context
             if not ctx.triggered:
                 return ""
             button_id = ctx.triggered[0]["prop_id"].split(".")[0]
-            if button_id == "btn-drive":
-                car.state = 'ready'
+            if button_id in ["btn-driveMode1",
+                             "btn-driveMode2",
+                             "btn-driveMode3",
+                             "btn-driveMode4",
+                             "btn-driveMode5",
+                             "btn-driveMode6",
+                             "btn-driveMode7",] and self.car.state != 'drive':
+                return "Fahrbereitschaft über Fahren herstellen"
+            elif button_id == "btn-drive":
+                self.car.state = 'ready'
                 self.car.drive()
                 self.write_log()
-                return "Fahren gestartet."
+                return "Fahrbereitschaft hergestellt."
             elif button_id == "btn-stop":
                 car.state = 'stop'
                 self.car.speed = 0
@@ -311,9 +332,9 @@ class SensorDashboard(DataLogger):
                 return "Fahrzeug gestoppt."
             elif button_id == "btn-driveMode1":
                 self.car.fahrmodus_1()
+                return "Fahrmodus_1 gestartet"
                 # self._thread = threading.Thread(target=self.car.fahrmodus_1)
                 # self._thread.start()
-                return "Fahrmodus_1 gestartet"
             elif button_id == "btn-driveMode2":
                 self.car.fahrmodus_2()
                 return "Fahrmodus_2 gestartet"
