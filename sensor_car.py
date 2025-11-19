@@ -11,8 +11,8 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def __init__(self):
         super().__init__()
         self.infrared = Infrared()
-#        self.__calibrated_reference = self.read_infrared_calibration_from_config()
-        self.__calibrated_reference = [161.5, 153.3, 175.3,	168.2, 150.0]
+        self.__calibrated_reference = self.read_infrared_calibration_from_config()
+        #self.__calibrated_reference = [161.5, 153.3, 175.3,	168.2, 150.0]
 
         self.infrared.set_references(self.__calibrated_reference)
         self.line_pos = []
@@ -128,6 +128,20 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             self.speed_reduction_to_follow_old = self.speed_reduction_to_follow
         print(self.speed_reduction_to_follow)
 
+    def follow_line_2(self):
+        self.__speed_coefficient = [0.5, 0.75, 1, 0.75, 1]
+        self.__target_control_angle = [45, 60, 90, 120, 135]
+        self.__ground_infrared_reference = [103, 128, 125, 110, 112]
+
+        current_infrared_measurement = np.array(self.infrared.read_analog())
+        distance_to_line_reference = current_infrared_measurement - np.array(self.__calibrated_reference)
+        min_val = np.min(distance_to_line_reference)
+        if min_val < 0:
+            distance_to_line_reference+=abs(min_val)
+        calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)
+        calc_weights=calc_weights/np.sum(calc_weights)
+        self.steering_angle_to_follow = np.sum(calc_weights* self.__target_control_angle)
+        self.speed_reduction_to_follow = np.sum(calc_weights*self.__speed_coefficient)
 
     def line_end(self):
         '''stopt das Fahrzeug am Ende der Linie'''
@@ -176,18 +190,19 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     #    kalibrierte Werte speichern (am besten in config.json)
     #    self.__calibrated_reference = self.infrared.cali_references()
         self.get_line_pos()
-        while self.line_end() == False:
+        while True:
     #        print(self.infrared.read_digital())
-            time.sleep(0.01)
+            #time.sleep(0.01)
             #while True:#self.steering_angle == None:
-            self.follow_line()
+            self.follow_line_2()
     #            self.steering_angle, self.speed_reduction_to_follow = self.fahrmodus_5.follow_line()
             #self.speed = max(init_speed * self.speed_reduction_to_follow, 20)
             #self.steering_angle = self.steering_angle_to_follow
-            if self.steering_angle < self.steering_angle_to_follow:
-                self.steering_angle += 1
-            if self.steering_angle > self.steering_angle_to_follow:
-                self.steering_angle -= 1
+            # if self.steering_angle < self.steering_angle_to_follow:
+            #     self.steering_angle += 1
+            # if self.steering_angle > self.steering_angle_to_follow:
+            #     self.steering_angle -= 1
+            self.steering_angle = self.steering_angle_to_follow
             # self.steering_angle = self.steering_angle_to_follow
     #        self.steering_angle = 50
             self.drive()
