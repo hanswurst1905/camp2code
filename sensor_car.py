@@ -24,6 +24,8 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.__line_pos_right = [0,0,0,0,1]
         self.steering_angle_to_follow_old = 90
         self.speed_reduction_to_follow_old = 1
+        self.__last_line_seen_timestamp = time.time()
+        self.__max_line_timeout = 0.5
 
     def read_infrared_calibration_from_config(self) -> list:
         with open('./software/config.json') as f:
@@ -136,8 +138,14 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         current_infrared_measurement = np.array(self.infrared.read_analog())
         distance_to_line_reference = current_infrared_measurement - np.array(self.__calibrated_reference)
         min_val = np.min(distance_to_line_reference)
+        current_time = time.time()
         if min_val < 0:
             distance_to_line_reference+=abs(min_val)
+            self.__last_line_seen_timestamp = current_time
+        elif (current_time - self.__last_line_seen_timestamp) > self.__max_line_timeout:
+                print(f"Keine Linie seit {self.__max_line_timeout}s gesehen => PiCar stoppt")
+                self.stop()
+                self.steering_angle_to_follow = None
         calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)
         calc_weights=calc_weights/np.sum(calc_weights)
         self.steering_angle_to_follow = np.sum(calc_weights* self.__target_control_angle)
@@ -190,6 +198,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     #    kalibrierte Werte speichern (am besten in config.json)
     #    self.__calibrated_reference = self.infrared.cali_references()
         self.get_line_pos()
+        self.__last_line_seen_timestamp = time.time()
         while True:
     #        print(self.infrared.read_digital())
             #time.sleep(0.01)
@@ -202,6 +211,8 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             #     self.steering_angle += 1
             # if self.steering_angle > self.steering_angle_to_follow:
             #     self.steering_angle -= 1
+            if self.steering_angle_to_follow is None:
+                break
             self.steering_angle = self.steering_angle_to_follow
             # self.steering_angle = self.steering_angle_to_follow
     #        self.steering_angle = 50
