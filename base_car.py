@@ -1,5 +1,3 @@
-
-
 from software.basisklassen import*
 import time
 from tabulate import tabulate
@@ -10,6 +8,7 @@ import json
 import re
 from pathlib import Path
 import threading
+from datalogger import DataLogger
 
 class BaseCar():
     '''
@@ -18,6 +17,7 @@ class BaseCar():
     Setter und Getter für Geschwindigkeit und Lenkwinkel
     '''
     def __init__(self):
+        # self.log = DataLogger()
         self.__turning_offset = 0
         self.__steering_angle_min = 45
         self.__steering_angle_max = 135  
@@ -41,6 +41,9 @@ class BaseCar():
 
 
     def save_logs(self):
+        '''
+        speichert den dataframe als csv Datei in ./logs
+        '''
         Path('logs').mkdir(exist_ok=True)
         print(f'save log für: {id(self)}')
         if self._log_saved:
@@ -61,6 +64,9 @@ class BaseCar():
     
     @steering_angle.setter
     def steering_angle(self, angle):
+        '''
+        setter für steering angle, prüfung auf werte zwischen min und max
+        '''
         try:
             if self.__steering_angle_min <= angle <= self.__steering_angle_max:
                 self._steering_angle = angle
@@ -79,6 +85,9 @@ class BaseCar():
  
     @speed.setter
     def speed(self, value):
+        '''
+        setter für speed, prüfung auf werte zwischen min und max
+        '''
         try:
             if self.__speed_min <= value <= self.__speed_max:
                 self._speed = value
@@ -90,10 +99,16 @@ class BaseCar():
 
     @property
     def direction(self):
+        '''
+        Return: direction (Fahrtrichtung)
+        '''
         return self._direction
     
     @property
     def state(self):
+        '''
+        Return: state (Fahrzustand)
+        '''
         return self._state
     
     @state.setter
@@ -206,15 +221,24 @@ class BaseCar():
 
 
     def stop(self):
+        '''
+        führt backwheels.stop() in der basisklasse aus
+        '''
         self.speed = 0
         self.backwheels.stop()
         self._direction = 0
         self.state = 'stop'
 
     def fahrmodus_1(self):
+        '''
+        führt fahrmodus_1 aus
+        '''
         self.fahrmodus(selection='1')
 
     def fahrmodus_2(self):
+        '''
+        führt fahrmodus_2 aus
+        '''
         # selection = '2'
         # t = threading.Thread(target=self.fahrmodus, args=(selection,))
         # t.start()
@@ -227,6 +251,9 @@ class BaseCar():
         pass
 
     def fahrmodus(self,selection):
+        '''
+        Ablaufsteuerung für die gewählten Fahrmodi
+        '''
         print('state:',self.state)
         try:
             if selection == '1': #Fahrmodus1
@@ -250,6 +277,7 @@ class BaseCar():
                     self.speed, self.steering_angle = speed_lst[i], angle_lst[i]
                     self.drive()
                     DataLogger(self).write_log()
+                    # self.log.write_log(self)
                     time.sleep(time_sleep[i])
                 elif self.state == 'stop':
                     break
@@ -267,26 +295,26 @@ class BaseCar():
             print(f'ein Fehler ist aufgetreten, Listen überprüfen -> KeyError {e}')
         print('state ende:',self.state)
 
-class DataLogger():
+# class DataLogger():
 
-    def __init__(self,car):
-        self.car = car
+#     def __init__(self,car):
+#         self.car = car
 
-    def get_log(self):
-        '''gibt Basislog als Dictionary zurück'''
-        self.log = {
-            "time": time.time(),
-            "speed": self.car.speed,
-            "direction": self.car.direction,
-            "steering_angle": self.car.steering_angle
-        }
-        return self.log
+#     def get_log(self):
+#         '''gibt Basislog als Dictionary zurück'''
+#         self.log = {
+#             "time": time.time(),
+#             "speed": self.car.speed,
+#             "direction": self.car.direction,
+#             "steering_angle": self.car.steering_angle
+#         }
+#         return self.log
 
-    def write_log(self):
-        '''schreibt die logging Daten'''
-        log_entry = self.get_log()
-        self.car.logs = pd.concat([self.car.logs,pd.DataFrame([log_entry])], ignore_index=True)
-        # print(self.car.logs.head())
+#     def write_log(self):
+#         '''schreibt die logging Daten'''
+#         log_entry = self.get_log()
+#         self.car.logs = pd.concat([self.car.logs,pd.DataFrame([log_entry])], ignore_index=True)
+#         # print(self.car.logs.head())
 
 def menue():
     menue_data = [
