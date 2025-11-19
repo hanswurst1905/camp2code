@@ -13,7 +13,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.infrared = Infrared()
         self.__calibrated_reference = self.read_infrared_calibration_from_config()
         #self.__calibrated_reference = [161.5, 153.3, 175.3,	168.2, 150.0]
-
+        self.steering_angle_to_follow = self.steering_angle
         self.infrared.set_references(self.__calibrated_reference)
         self.line_pos = []
         self.line_pos_max_len = 5    # Anzahl der gespeicherten Werte
@@ -147,8 +147,12 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             self.stop()
             self.steering_angle_to_follow = None
             return
-        elif (current_time - self.__last_line_seen_timestamp) > (self.__max_line_timeout/2):
-            self.steering_angle_to_follow = self.steering_angle_to_follow + 1
+        else:
+            self.steering_angle_to_follow += 1
+            if self.steering_angle_to_follow > self._steering_angle_max: 
+                self.steering_angle_to_follow = self._steering_angle_max
+            elif self.steering_angle_to_follow < self._steering_angle_min:
+                self.steering_angle_to_follow = self._steering_angle_min
             return
         calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)
         calc_weights=calc_weights/np.sum(calc_weights)
