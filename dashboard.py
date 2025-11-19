@@ -442,21 +442,3 @@ if __name__ == "__main__":
         print("Interrupt by user")
     finally:
         car.save_logs() #speichert die logs
-
-
-#  app = dash.Dash(__name__)
-#  cap = cv2.VideoCapture(0)
-
-
-
-#  app.layout = html.Div([
-#      html.H1("Live Kamera"),
-#      html.Img(id="live-image"),
-#      dcc.Interval(id="interval", interval=500, n_intervals=0)
-#  ])
-
-#  @app.callback(dash.Output("live-image", "src"), dash.Input("interval", "n_intervals"))
-#  def update_image(n):
-#      return "data:image/jpeg;base64," + get_frame()
-
-
