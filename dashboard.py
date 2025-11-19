@@ -16,6 +16,7 @@ class SensorDashboard():
         # super().__init__()
         self.cap = cv2.VideoCapture(0)
         self.status_cam = False
+        self.cam_thread = None
         self.car = car
         self.log = log
         logs_path = "logs"
@@ -40,6 +41,20 @@ class SensorDashboard():
         dist = self.car.get_safe_distance()
         base_log["ultrasonic_distance"] = dist
         return base_log
+
+    def cam_thread(self):
+        if self.status_cam == True:
+            self.cam_thread = threading.Thread(target=self._cam_worker, daemon=True)
+        else:
+            if self.cam_thread:
+                self.cam_thread.join(timeout=1)
+
+    def cam_worker(self):
+        while self.status_cam:
+            ret, frame = self.cap.read()
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
+            _, buffer = cv2.imencode('.jpg', frame)
+            return base64.b64encode(buffer).decode()
 
     def get_frame(self):
         ret, frame = self.cap.read()
@@ -268,6 +283,8 @@ class SensorDashboard():
 
             self.state = self.car.state
             self.ultrasonic_distance=self.car.get_safe_distance()
+            if self.ultrasonic_distance < 10:
+                self.car.speed = 0
             return(
                 html.Div(
                     f"IST:\t\t{speed:.0f} km/h\n\n"
@@ -382,9 +399,11 @@ class SensorDashboard():
             elif button_id == "btn-cam":
                 if self.status_cam == True:
                     self.status_cam = False
+                    self.cam_thread
                     text = f'Kamera gestoppt'
                 else:
                     self.status_cam = True
+                    self.cam_thread()
                     text = f'Kamera gestartet'
                 return text
             elif button_id == "btn-saveLog":
@@ -437,7 +456,7 @@ class SensorDashboard():
         @self.app.callback(dash.Output("live-image", "src"), dash.Input("cam-interval", "n_intervals"))
         def update_image(n):
             if self.status_cam == True:
-                return "data:image/jpeg;base64," + self.get_frame()
+                return "data:image/jpeg;base64," + self.cam_worker()
             else:
                 return "assets/no_cam.jpg"
 
