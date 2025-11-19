@@ -146,6 +146,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                 print(f"Keine Linie seit {self.__max_line_timeout}s gesehen => PiCar stoppt")
                 self.stop()
                 self.steering_angle_to_follow = None
+                return
         calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)
         calc_weights=calc_weights/np.sum(calc_weights)
         self.steering_angle_to_follow = np.sum(calc_weights* self.__target_control_angle)
