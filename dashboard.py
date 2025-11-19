@@ -11,17 +11,17 @@ import pandas as pd
 import cv2, base64
 
 # class SensorDashboard(DataLogger):
-class SensorDashboard():
+class SensorDashboard(DataLogger):
     def __init__(self,car):
-        # super().__init__()
+        super().__init__(car)
         self.cap = cv2.VideoCapture(0)
         self.status_cam = False
         self.cam_thread = None
         self.latest_frame = None
         self.car = car
-        self.log = log
-        logs_path = "logs"
-        self.available_logs = [f for f in os.listdir(logs_path) if f.endswith(".log")]
+        # self.log = car.log
+        self.logs_path = "logs"
+        self.available_logs = [f for f in os.listdir(self.logs_path) if f.endswith(".log")]
         # self.is_driving = False  # Fahrstatus
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
         self._setup_layout()
@@ -37,8 +37,8 @@ class SensorDashboard():
 
 
     def get_log(self):
-        # base_log = super().get_log()
-        base_log = log.get_log()
+        base_log = super().get_log()
+        # base_log = self.get_log()
         dist = self.car.get_safe_distance()
         base_log["ultrasonic_distance"] = dist
         return base_log
@@ -61,15 +61,7 @@ class SensorDashboard():
             frame = cv2.rotate(frame, cv2.ROTATE_180)
             _, buffer = cv2.imencode('.jpg', frame)
             self.latest_frame = base64.b64encode(buffer).decode()
-            time.sleep(0.1)
-    
-    # def get_frame(self):
-    #     ret, frame = self.cap.read()
-    #     frame = cv2.rotate(frame, cv2.ROTATE_180)
-    #     _, buffer = cv2.imencode('.jpg', frame)
-        
-    #     return base64.b64encode(buffer).decode()
-
+            time.sleep(0.05)
 
     def _setup_layout(self):
         self.app.layout = dbc.Container([
@@ -223,6 +215,7 @@ class SensorDashboard():
                                 )
                             ])
                         ], color="info", outline=True), width=6),
+                        dbc.Col(dbc.Button("refresh logs", id="btn-refreshLog", color="warning", className="title"), width=6),
                     ]),
 
                     html.Div(style={"height": "30px"}),
@@ -279,7 +272,7 @@ class SensorDashboard():
             # if self.car.state == 'drive' and not self.car.logs.empty:
             if not self.car.logs.empty:
                 if self.car.state == 'drive':
-                    log.write_log()
+                    self.write_log()
                     self.drive_time = self.drive_time + interval_ms / 1000
                     self.drive_distance = self.drive_distance + abs(self.car.speed) * 1/3.6
                 self.speed_mean = abs(self.car.logs["speed"]).mean()
@@ -290,7 +283,7 @@ class SensorDashboard():
 
             self.state = self.car.state
             self.ultrasonic_distance=self.car.get_safe_distance()
-            if self.ultrasonic_distance < 10:
+            if self.ultrasonic_distance < self.car.speed / 2:
                 self.car.speed = 0
             return(
                 html.Div(
@@ -372,14 +365,14 @@ class SensorDashboard():
             elif button_id == "btn-drive":
                 self.car.state = 'ready'
                 self.car.drive()
-                self.log.write_log()
+                self.write_log()
                 return "Fahrbereitschaft hergestellt."
             elif button_id == "btn-stop":
                 car.state = 'stop'
                 self.car.speed = 0
                 self.car.steering_angle = 90
                 self.car.stop()
-                self.log.write_log()
+                self.write_log()
                 return "Fahrzeug gestoppt."
             elif button_id == "btn-driveMode1":
                 self.car.fahrmodus_1()
@@ -413,6 +406,7 @@ class SensorDashboard():
                 return text
             elif button_id == "btn-saveLog":
                 self.car.save_logs()
+                
             
 
         # Intervall → Slider synchronisieren mit car-Werten
@@ -468,7 +462,14 @@ class SensorDashboard():
             else:
                 return "assets/no_cam.jpg"
 
-
+        @self.app.callback(
+            Output("log-dropdown", "options"),
+            Input("btn-refreshLog","n_clicks")
+        )
+        def update_dropdownLogs(n_clicks):
+            self.available_logs = [f for f in os.listdir(self.logs_path) if f.endswith(".log")]
+            return [{"label": fname, "value": fname} for fname in self.available_logs]
+        
     def run(self):
         self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
         
@@ -476,7 +477,7 @@ class SensorDashboard():
 
 if __name__ == "__main__":
     car = SonicCar()
-    log = DataLogger(car)
+    # log = DataLogger(car)
     dashboard = SensorDashboard(car)
     
     try:
