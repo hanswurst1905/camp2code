@@ -49,7 +49,8 @@ class BaseCar():
         filename = f"logs/{timestamp}_baseCarLogging.log"
         if not self.logs.empty:
             self.logs.to_csv(filename,index=False)
-            self._log_saved = True
+            # self._log_saved = True
+            self.logs = pd.DataFrame()
 
     @property
     def steering_angle(self):
