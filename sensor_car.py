@@ -13,14 +13,13 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.infrared = Infrared()
         self.__calibrated_reference = self.read_infrared_calibration_from_config()
         self.infrared.set_references(self.__calibrated_reference)
-        self.line_pos = [
-                    [0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0]  # Start mit leerer Liste
-                    ]
-        self.line_pos_max_len = 3    # Anzahl der gespeicherten Werte
+        self.line_pos = []
+        self.line_pos_max_len = 20    # Anzahl der gespeicherten Werte
+        self.line_pos = [self.line_pos.append([0, 0, 0, 0, 0]) for i in range(self.line_pos_max_len)]
         self.__line_pos_left = [1,0,0,0,0]
         self.__line_pos_right = [0,0,0,0,1]
+        self.steering_angle_to_follow_old = 90
+        self.speed_reduction_to_follow_old = 1
 
     def read_infrared_calibration_from_config(self) -> list:
         with open('./software/config.json') as f:
@@ -79,8 +78,6 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
 
     def follow_line(self):
         '''Anhand der Position der Linie wird der Lenkwinkel, sowie Reduktion der Geschwindigkeit zurück gegeben'''
-        self.steering_angle_to_follow_old = 90
-        self.speed_reduction_to_follow_old = 1
         self.__line_posible_positions = [
                     [0, 0, 0, 0, 0, None, None],
                     [1, 0, 0, 0, 0, 45, 0.75],
@@ -124,7 +121,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         # wenn aktueller Messwert = 00000 und der letzte Messwert weder 10000 noch 00001 war kann die linie nicht zur Seite rausgelaufen sein
         if self.line_pos[0] == [0,0,0,0,0] and (self.line_pos[1] != self.__line_pos_left or self.line_pos[1] != self.__line_pos_right):
             print("Verdacht Linie zu Ende")
-            if self.line_pos[1] == [0,0,0,0,0] and (self.line_pos[2] != self.__line_pos_left or self.line_pos[2] != self.__line_pos_right):
+            if self.line_pos[-1] == [0,0,0,0,0] and (self.line_pos[2] != self.__line_pos_left or self.line_pos[2] != self.__line_pos_right):
                 print("Linie zu Ende")
                 self.stop()
                 return True
@@ -178,9 +175,11 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                 self.steering_angle += 1
             if self.steering_angle > self.steering_angle_to_follow:
                 self.steering_angle -= 1
+            # self.steering_angle = self.steering_angle_to_follow
     #        self.steering_angle = 50
             self.drive()
-            self.line_lost_in_direction()
+            # time.sleep(0.1)
+            #self.line_lost_in_direction()
 
 
 
@@ -203,8 +202,8 @@ def menue():
     return input('bitte Auswahl treffen: ')
 
 def main():
-    running = True
-    while running == True:
+    # running = True
+    # while running == True:
 
 #        selection = menue()
         selection ='5'       
