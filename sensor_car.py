@@ -11,11 +11,15 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def __init__(self):
         super().__init__()
         self.infrared = Infrared()
-        self.__calibrated_reference = self.read_infrared_calibration_from_config()
+#        self.__calibrated_reference = self.read_infrared_calibration_from_config()
+        self.__calibrated_reference = [161.5, 153.3, 175.3,	168.2, 150.0]
+
         self.infrared.set_references(self.__calibrated_reference)
         self.line_pos = []
-        self.line_pos_max_len = 20    # Anzahl der gespeicherten Werte
-        self.line_pos = [self.line_pos.append([0, 0, 0, 0, 0]) for i in range(self.line_pos_max_len)]
+        self.line_pos_max_len = 5    # Anzahl der gespeicherten Werte
+        [self.line_pos.append([0, 0, 1, 0, 0]) for i in range(self.line_pos_max_len)]
+        self.line_pos_analog = []
+        [self.line_pos_analog.append([0, 0, 1, 0, 0]) for i in range(self.line_pos_max_len)]
         self.__line_pos_left = [1,0,0,0,0]
         self.__line_pos_right = [0,0,0,0,1]
         self.steering_angle_to_follow_old = 90
@@ -75,6 +79,14 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         if len(self.line_pos) > self.line_pos_max_len:  # letztes Element wieder entfernen
             self.line_pos.pop()
         print(self.line_pos)
+    
+    def get_line_pos_analog(self):
+        '''füllt den Ringspeicher mit Messwerten der IR-Sensorleiste, neuste Messung auf Position [0]'''
+        new_value_analog = self.infrared.read_analog()        # Neuen Wert lesen
+        self.line_pos_analog.insert(0, new_value_analog)              # Neuen Wert vorne einfügen es entsteht ein Arry mit 4 Elementen
+        if len(self.line_pos_analog) > self.line_pos_max_len:  # letztes Element wieder entfernen
+            self.line_pos_analog.pop()
+        print(self.line_pos_analog)
 
     def follow_line(self):
         '''Anhand der Position der Linie wird der Lenkwinkel, sowie Reduktion der Geschwindigkeit zurück gegeben'''
@@ -95,6 +107,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
 
         self.__line_posible_positions_temp = [row[:-2] for row in self.__line_posible_positions]
         self.get_line_pos()
+        self.get_line_pos_analog()
         for i, row in enumerate(self.__line_posible_positions_temp):
 #            print(i,row,self.line_pos[0])
             if row == self.line_pos[0]:
@@ -165,7 +178,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.get_line_pos()
         while self.line_end() == False:
     #        print(self.infrared.read_digital())
-  #          time.sleep(1)
+            time.sleep(0.01)
             #while True:#self.steering_angle == None:
             self.follow_line()
     #            self.steering_angle, self.speed_reduction_to_follow = self.fahrmodus_5.follow_line()
@@ -202,26 +215,34 @@ def menue():
     return input('bitte Auswahl treffen: ')
 
 def main():
+    car = SensorCar()
     # running = True
     # while running == True:
 
-#        selection = menue()
-        selection ='5'       
-        car = SensorCar()
-        if selection == '1':
-            car.fahrmodus_1()
-        elif selection == '2':
-            car.fahrmodus_2()
-        elif selection == '3':
-            car.fahrmodus_3()
-        elif selection == '4':
-            car.fahrmodus_4()
-        elif selection == '5':
-            car.fahrmodus_5()
-        elif selection == '6':
-            car.fahrmodus_6()
-        elif selection == '7':
-            running = False
+    #   selection = menue()
+    selection ='5'       
+
+    # car.speed = 30
+    # car.drive()
+    # print(car.infrared.read_digital())
+    # print(car.infrared.get_average(mount=3000))
+    # #time.sleep(1)
+    # car.stop()
+
+    if selection == '1':
+        car.fahrmodus_1()
+    elif selection == '2':
+        car.fahrmodus_2()
+    elif selection == '3':
+        car.fahrmodus_3()
+    elif selection == '4':
+        car.fahrmodus_4()
+    elif selection == '5':
+        car.fahrmodus_5()
+    elif selection == '6':
+        car.fahrmodus_6()
+    elif selection == '7':
+        running = False
 
 
 if __name__ == "__main__":
