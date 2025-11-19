@@ -159,6 +159,10 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.steering_angle_to_follow = np.sum(calc_weights* self.__target_control_angle)
         self.speed_reduction_to_follow = np.sum(calc_weights*self.__speed_coefficient)
 
+    def update_line_timeout(self):
+        '''Kennlinie zur Reduktion des Timeouts auf Basis der Geschwindigkeit 25% = 0.5s und 100% = 0.05s'''
+        self.__max_line_timeout=0.65 - 0.45/75*float(self.speed)
+
     def line_end(self):
         '''stopt das Fahrzeug am Ende der Linie'''
         # wenn aktueller Messwert = 00000 und der letzte Messwert weder 10000 noch 00001 war kann die linie nicht zur Seite rausgelaufen sein
@@ -197,7 +201,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             return False
 
 
-    def fahrmodus_5(self, init_speed = 30, steering_angle=90):
+    def fahrmodus_5(self, init_speed = 100, steering_angle=90):
         self.speed = init_speed
         self.steering_angle = steering_angle
     #    abfrage ob sich der Untergrund geändert hat => einmalig Kalibrierung durchführen  
@@ -212,6 +216,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             #time.sleep(0.01)
             #while True:#self.steering_angle == None:
             self.follow_line_2()
+            self.update_line_timeout()
     #            self.steering_angle, self.speed_reduction_to_follow = self.fahrmodus_5.follow_line()
             #self.speed = max(init_speed * self.speed_reduction_to_follow, 20)
             #self.steering_angle = self.steering_angle_to_follow
