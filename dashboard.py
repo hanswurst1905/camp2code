@@ -15,6 +15,7 @@ class SensorDashboard():
     def __init__(self,car):
         # super().__init__()
         self.cap = cv2.VideoCapture(0)
+        self.status_cam = False
         self.car = car
         self.log = log
         logs_path = "logs"
@@ -83,7 +84,7 @@ class SensorDashboard():
                                 html.H4(id="angle-display", className="card-title"),
                                 dcc.Slider(
                                     id="angle-slider", min=45, max=135, step=1, value=self.car.steering_angle,
-                                    marks={45: "45°",70: "70°", 90: "90°",110: "110°", 135: "135°"}
+                                    marks={45: "45°",70: "70°",80: "80°", 90: "90°",100: "100°", 110: "110°", 135: "135°"}
                                 )
                             ])
                         ], color="info", inverse=True), width=6),
@@ -101,6 +102,7 @@ class SensorDashboard():
                         dbc.Col(dbc.Button("Fahrmodus_5", id="btn-driveMode5", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Fahrmodus_6", id="btn-driveMode6", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Fahrmodus_7", id="btn-driveMode7", color="success", className="title"), width=2),
+                        dbc.Col(dbc.Button("Kamerabild", id="btn-cam", color="warning", className="title"), width=2),
                 ]),
 
                 html.Div(style={"height":"30px"}),
@@ -117,7 +119,7 @@ class SensorDashboard():
                                 dbc.CardHeader("Cam"),
                                 dbc.CardBody([
                                     html.Img(id="live-image"),
-                                    dcc.Interval(id="cam-interval", interval=200, n_intervals=0)
+                                    dcc.Interval(id="cam-interval", interval=100, n_intervals=0)
                                 ])
                             ], color="success", inverse=True, outline=False), width=6),
                     ])
@@ -315,6 +317,7 @@ class SensorDashboard():
             Input("btn-driveMode5","n_clicks"),
             Input("btn-driveMode6","n_clicks"),
             Input("btn-driveMode7","n_clicks"),
+            Input("btn-cam","n_clicks"),
             Input("btn-saveLog","n_clicks"),
             prevent_initial_call=True
         )
@@ -327,6 +330,7 @@ class SensorDashboard():
                            driveMode5_clicks,
                            driveMode6_clicks,
                            driveMode7_clicks,
+                           cam_clicks,
                            saveLog_clicks
                            ):
             ctx = dash.callback_context
@@ -375,6 +379,14 @@ class SensorDashboard():
             elif button_id == "btn-driveMode7":
                 # self.car.fahrmodus_7()
                 return 'under construction'
+            elif button_id == "btn-cam":
+                if self.status_cam == True:
+                    self.status_cam = False
+                    text = f'Kamera gestoppt'
+                else:
+                    self.status_cam = True
+                    text = f'Kamera gestartet'
+                return text
             elif button_id == "btn-saveLog":
                 self.car.save_logs()
             
@@ -424,7 +436,11 @@ class SensorDashboard():
 
         @self.app.callback(dash.Output("live-image", "src"), dash.Input("cam-interval", "n_intervals"))
         def update_image(n):
-            return "data:image/jpeg;base64," + self.get_frame()
+            if self.status_cam == True:
+                return "data:image/jpeg;base64," + self.get_frame()
+            else:
+                return "assets/no_cam.jpg"
+
 
     def run(self):
         self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
