@@ -1,17 +1,20 @@
 import dash
 from dash import html, dcc, Output, Input, Dash, State, dash_table
 import dash_bootstrap_components as dbc
-from base_car import DataLogger
+# from base_car import DataLogger
+from datalogger import DataLogger
 import plotly.express as px
 from sonic_car import*
 import threading
 import os
 import pandas as pd
 
-class SensorDashboard(DataLogger):
+# class SensorDashboard(DataLogger):
+class SensorDashboard():
     def __init__(self,car):
-        super().__init__(car)
+        # super().__init__()
         self.car = car
+        self.log = log
         logs_path = "logs"
         self.available_logs = [f for f in os.listdir(logs_path) if f.endswith(".log")]
         # self.is_driving = False  # Fahrstatus
@@ -29,7 +32,8 @@ class SensorDashboard(DataLogger):
 
 
     def get_log(self):
-        base_log = super().get_log()
+        # base_log = super().get_log()
+        base_log = log.get_log()
         dist = self.car.get_safe_distance()
         base_log["ultrasonic_distance"] = dist
         return base_log
@@ -232,7 +236,7 @@ class SensorDashboard(DataLogger):
             # if self.car.state == 'drive' and not self.car.logs.empty:
             if not self.car.logs.empty:
                 if self.car.state == 'drive':
-                    self.write_log()
+                    log.write_log()
                     self.drive_time = self.drive_time + interval_ms / 1000
                     self.drive_distance = self.drive_distance + abs(self.car.speed) * 1/3.6
                 self.speed_mean = abs(self.car.logs["speed"]).mean()
@@ -277,7 +281,7 @@ class SensorDashboard(DataLogger):
                 self.car.drive()
                 pass
             if self.car.state == 'drive':
-                # self.write_log()
+                # self.log.write_log()
                 pass
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
@@ -321,14 +325,14 @@ class SensorDashboard(DataLogger):
             elif button_id == "btn-drive":
                 self.car.state = 'ready'
                 self.car.drive()
-                self.write_log()
+                self.log.write_log()
                 return "Fahrbereitschaft hergestellt."
             elif button_id == "btn-stop":
                 car.state = 'stop'
                 self.car.speed = 0
                 self.car.steering_angle = 90
                 self.car.stop()
-                self.write_log()
+                self.log.write_log()
                 return "Fahrzeug gestoppt."
             elif button_id == "btn-driveMode1":
                 self.car.fahrmodus_1()
@@ -407,6 +411,7 @@ class SensorDashboard(DataLogger):
 
 if __name__ == "__main__":
     car = SonicCar()
+    log = DataLogger(car)
     dashboard = SensorDashboard(car)
     try:
         dashboard.run()
