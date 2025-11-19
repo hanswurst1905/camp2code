@@ -8,11 +8,13 @@ from sonic_car import*
 import threading
 import os
 import pandas as pd
+import cv2, base64
 
 # class SensorDashboard(DataLogger):
 class SensorDashboard():
     def __init__(self,car):
         # super().__init__()
+        self.cap = cv2.VideoCapture(0)
         self.car = car
         self.log = log
         logs_path = "logs"
@@ -37,7 +39,15 @@ class SensorDashboard():
         dist = self.car.get_safe_distance()
         base_log["ultrasonic_distance"] = dist
         return base_log
-    
+
+    def get_frame(self):
+        ret, frame = self.cap.read()
+        frame = cv2.rotate(frame, cv2.ROTATE_180)
+        _, buffer = cv2.imencode('.jpg', frame)
+        
+        return base64.b64encode(buffer).decode()
+
+
     def _setup_layout(self):
         self.app.layout = dbc.Container([
             html.H2("PiCar Dashboard", className="text-center my-4"),
@@ -95,12 +105,21 @@ class SensorDashboard():
 
                 html.Div(style={"height":"30px"}),
                     dbc.Row([
-                        dbc.Col(dbc.Card([
-                        dbc.CardHeader("Fahrzeugstatus"),
-                        dbc.CardBody([
-                        html.H4(id="Messwert3", className="title")
-                        ])
-                    ], color="success", inverse=True, outline=False), width=6),
+                        dbc.Col(
+                            dbc.Card([
+                                dbc.CardHeader("Fahrzeugstatus"),
+                                dbc.CardBody([
+                                html.H4(id="Messwert3", className="title")
+                                ])
+                            ], color="success", inverse=True, outline=False), width=6),
+                        dbc.Col(
+                            dbc.Card([
+                                dbc.CardHeader("Cam"),
+                                dbc.CardBody([
+                                    html.Img(id="live-image"),
+                                    dcc.Interval(id="cam-interval", interval=200, n_intervals=0)
+                                ])
+                            ], color="success", inverse=True, outline=False), width=6),
                     ])
             ]),
 
@@ -403,6 +422,9 @@ class SensorDashboard():
             fig = px.line(df, x=df.index, y=df.columns, title=f'Log:{selected_file}', line_shape="hv")
             return columns, data, fig
 
+        @self.app.callback(dash.Output("live-image", "src"), dash.Input("cam-interval", "n_intervals"))
+        def update_image(n):
+            return "data:image/jpeg;base64," + self.get_frame()
 
     def run(self):
         self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
@@ -413,9 +435,28 @@ if __name__ == "__main__":
     car = SonicCar()
     log = DataLogger(car)
     dashboard = SensorDashboard(car)
+    
     try:
         dashboard.run()
     except KeyboardInterrupt:
         print("Interrupt by user")
     finally:
         car.save_logs() #speichert die logs
+
+
+#  app = dash.Dash(__name__)
+#  cap = cv2.VideoCapture(0)
+
+
+
+#  app.layout = html.Div([
+#      html.H1("Live Kamera"),
+#      html.Img(id="live-image"),
+#      dcc.Interval(id="interval", interval=500, n_intervals=0)
+#  ])
+
+#  @app.callback(dash.Output("live-image", "src"), dash.Input("interval", "n_intervals"))
+#  def update_image(n):
+#      return "data:image/jpeg;base64," + get_frame()
+
+
