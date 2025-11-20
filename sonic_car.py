@@ -122,8 +122,10 @@ def main():
         elif selection == '2':
             car.fahrmodus_2()
         elif selection == '3':
+            car.drive()
             car.fahrmodus_3()
         elif selection == '4':
+            car.drive()
             car.fahrmodus_4()
         elif selection == '5':
             running = False
