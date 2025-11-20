@@ -206,7 +206,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             return False
 
 
-    def fahrmodus_5(self, init_speed = 00, steering_angle=90):
+    def fahrmodus_5(self, init_speed = 30, steering_angle=90):
         self.speed = init_speed
         self.steering_angle = steering_angle
     #    abfrage ob sich der Untergrund geändert hat => einmalig Kalibrierung durchführen  
@@ -216,7 +216,9 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     #    self.__calibrated_reference = self.infrared.cali_references()
         self.get_line_pos()
         self.__last_line_seen_timestamp = time.time()
+        # while self.state == 'drive':
         while True:
+            # if self.speed == 0: self.speed = init_speed
     #        print(self.infrared.read_digital())
             #time.sleep(0.01)
             #while True:#self.steering_angle == None:
@@ -232,11 +234,15 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             if self.steering_angle_to_follow is None:
                 break
             self.steering_angle = self.steering_angle_to_follow
+            if self.state in ['ready','drive']: self.drive()
             # self.steering_angle = self.steering_angle_to_follow
     #        self.steering_angle = 50
-            self.drive()
+            # self.drive()
             # time.sleep(0.1)
             #self.line_lost_in_direction()
+            if self.state == 'stop':
+                print('sensorCar Ende')
+                break
 
 
 
