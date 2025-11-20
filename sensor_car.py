@@ -208,6 +208,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.speed_reduction_to_follow = init_speed
         self.steering_angle = steering_angle
         self.__last_line_seen_timestamp = time.time()
+        # while self.state == 'drive':
         while True:
             self.follow_line_2()
             if self.steering_angle_to_follow is None:
@@ -220,7 +221,11 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                  self.steering_angle = max((self.steering_angle + int(max(-steering_gradient,relative_steering_adjustment))),self._steering_angle_min)
             self.speed = max(int(self.speed_reduction_to_follow*init_speed),25)
             self.update_line_timeout()   
-            self.drive()
+
+            if self.state in ['ready','drive']: self.drive()
+            if self.state == 'stop':
+                print('sensorCar Ende')
+                break
 
     def fahrmodus_6(self, init_speed = 25, steering_angle=90):
         if init_speed < 25:
@@ -246,7 +251,10 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                  self.steering_angle = max((self.steering_angle + int(max(-steering_gradient,relative_steering_adjustment))),self._steering_angle_min)
             self.speed = max(int(self.speed_reduction_to_follow*init_speed),25)
             self.update_line_timeout()   
-            self.drive()
+            if self.state in ['ready','drive']: self.drive()
+            if self.state == 'stop':
+                print('sensorCar Ende')
+                break
 
 
     def move_back_to_line(self):
@@ -255,7 +263,10 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             sign_of_line_lost = np.sign(self.__line_lost_counter)
             self.speed = -25
             self.steering_angle = 90 + sign_of_line_lost*45
-            self.drive()
+            if self.state in ['ready','drive']: self.drive()
+            if self.state == 'stop':
+                print('sensorCar Ende')
+                return
             if sign_of_line_lost < 0:
                 infrared_sensor_selector = 0
             else:
@@ -269,7 +280,6 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             self.speed=0
             self.steering_angle=90
             self.__last_line_seen_timestamp = time.time()
-
 
 
     def geraden_gleichung(self,startwert, zielwert, start_input, end_input, inp):

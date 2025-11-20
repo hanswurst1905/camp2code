@@ -80,8 +80,10 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         while distance > 10 or self.direction == -1 :
             self.calc_approach_speed(distance)
             distance = self.get_safe_distance()
+            if self.state in ['ready','drive']: self.drive()
             if self.state == 'stop': break
         self.speed = 0
+        self.drive()
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
     def fahrmodus_4(self, init_speed = 35, steering_angle = 90):
@@ -89,12 +91,10 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
             self.fahrmodus_3(init_speed,steering_angle)
             self.steering_angle = 45
             self.speed = -30
+            if self.state in ['ready','drive']: self.drive()
             time.sleep(2)
             self.speed = 0
             if self.state == 'stop': break
-
-
-
 
 def menue():
     menue_data = [

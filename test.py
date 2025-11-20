@@ -21,12 +21,23 @@ def fahrmodus_test(car):
 
 def main():
     car = BaseCar()
-    test_frontwheels(car)
+    # test_frontwheels(car)
     # fahrmodus_test(car) 
     # car.fahrmodus1(selection='1')
     # a=Test(car)
     # a.write_log()
     # car.fahrmodus_1()
+    car.drive()
+    i=0
+    while i<10:
+        if car.state in ['ready','drive']:
+            car.speed = 30
+            car.drive()
+            time.sleep(1)
+            car.speed = -30
+            car.drive()
+        i += 1
+        print(f'i:{i}')
     
     # print(a)
 
