@@ -943,7 +943,7 @@ def main(modus):
     
     if modus == 5:
         try:
-            with open("config.json", "r") as f:
+            with open("software/config.json", "r") as f:
                 data = json.load(f)
                 turning_offset = data["turning_offset"]
                 forward_A = data["forward_A"]

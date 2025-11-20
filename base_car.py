@@ -6,6 +6,7 @@ from tabulate import tabulate
 import sys
 import pandas as pd
 from datetime import datetime
+import statistics
 import json
 import re
 from pathlib import Path
@@ -38,6 +39,8 @@ class BaseCar():
         self.logs = pd.DataFrame()
         self._log_saved = False
         self._state = 'init'
+        self.__time_init = time.time()
+        self._drive_distance = 0
         
         self.__time_init = time.time()
         self._drive_distance = 0
@@ -274,7 +277,7 @@ class DataLogger():
         '''gibt Basislog als Dictionary zurück'''
         self.log = {
             "time": time.time(),
-            "speed": self.car.speed,
+            "speed": abs(self.car.speed),
             "direction": self.car.direction,
             "steering_angle": self.car.steering_angle
         }

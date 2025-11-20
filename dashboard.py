@@ -13,6 +13,10 @@ class SensorDashboard(DataLogger):
         self._setup_layout()
         self._setup_callbacks()
         self.dist = 5
+        self.speed_mean = 0
+        self.speed_min = 0
+        self.speed_max = 0
+        self.drive_time = 0
 
     def get_log(self):
         base_log = super().get_log()
@@ -137,15 +141,21 @@ class SensorDashboard(DataLogger):
                 Output("Messwert","children"),
                 Output("Messwert2","children"),
                 Input("interval-sync","n_intervals")
-                
         )
         def update_values(n_intervals):
+            if car.state == 'drive' and not car.logs.empty:
+                self.write_log()
+                print(f"car.state: {car.state} --> logging")
+                self.speed_mean = car.logs["speed"].mean()
+                self.speed_min = car.logs["speed"].min()
+                self.speed_max = car.logs["speed"].max()
+            
             return(
                 html.Div(
                     f"IST:\t\t{self.car.speed:.0f} km/h\n\n"
-                    f"min:\t\t{self.car.speed_min:.0f} km/h\n"
-                    f"max:\t{self.car.speed_max:.0f} km/h\n"
-                    f"mean:\t{self.car.speed_mean:.0f} km/h",
+                    f"min:\t\t{self.speed_min:.0f} km/h\n"
+                    f"max:\t{self.speed_max:.0f} km/h\n"
+                    f"mean:\t{self.speed_mean:.0f} km/h",
                     style={"whiteSpace": "pre"}  # fpr Tabs (\t) und Zeilenumbrüche (\n)
                 ),
                 html.Div(
@@ -164,8 +174,10 @@ class SensorDashboard(DataLogger):
             self.car.steering_angle = angle
             if self.is_driving:
                 self.car.drive()
+                pass
             if self.car.state == 'drive':
-                self.write_log()
+                # self.write_log()
+                pass
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
         @self.app.callback(
