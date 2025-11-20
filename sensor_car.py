@@ -315,7 +315,9 @@ def main():
     # print(car.infrared.get_average(mount=3000))
     # #time.sleep(1)
     #car.stop()
-
+    car.speed=30
+    car.steering_angle=90
+    car.state = 'drive'
     if selection == '1':
         car.fahrmodus_1()
     elif selection == '2':
