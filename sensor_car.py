@@ -81,19 +81,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.line_pos.insert(0, new_value)              # Neuen Wert vorne einfügen es entsteht ein Arry mit 4 Elementen
         if len(self.line_pos) > self.line_pos_max_len:  # letztes Element wieder entfernen
             self.line_pos.pop()
-        # formatted = [[f"{x:.0f}" for x in arr] for arr in self.line_pos]
-        # print(formatted)
-
-        # for arr in self.line_pos:
-        #     print(" ".join(f"{x:.0f}" for x in arr))
-
-
-
-    def format_subarrays(self, arrays, decimals=0):
-        return " ".join(
-            "[" + ", ".join(f"{x:.{decimals}f}" for x in arr) + "]"
-            for arr in arrays
-        )
+        print(" ".join("[" + ", ".join(f"{x:.0f}" for x in arr) + "]" for arr in self.line_pos))
 
 
     def follow_line(self):
@@ -215,7 +203,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             return False
 
 
-    def fahrmodus_5(self, init_speed = 50, steering_angle=90):
+    def fahrmodus_5(self, init_speed = 80, steering_angle=90):
         if init_speed < 25:
             print("Geschwindigkeit zu niedrig für den Fahrmodus")
             return
@@ -244,7 +232,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         while True:
             self.follow_line_2()
             self.get_line_pos()
-            print(format_subarrays(self.line_pos))
+
             self.update_line_timeout()
             if self.steering_angle_to_follow is None:
                 break
@@ -276,7 +264,7 @@ def main():
     # while running == True:
 
     #   selection = menue()
-    selection ='6'       
+    selection ='5'       
 
     # car.speed = 30
     # car.drive()
