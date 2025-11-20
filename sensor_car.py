@@ -131,8 +131,8 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         print(self.speed_reduction_to_follow)
 
     def follow_line_2(self):
-        self.__speed_coefficient = [0.5, 0.75, 1, 0.75, 1]
-        self.__target_control_angle = [45, 60, 90, 120, 135]
+        self.__speed_coefficient = np.array([0.5, 0.75, 1, 0.75, 0.5])
+        self.__target_control_angle = np.array([45, 60, 90, 120, 135])
         self.__ground_infrared_reference = [103, 128, 125, 110, 112]
 
         current_infrared_measurement = np.array(self.infrared.read_analog())
@@ -161,12 +161,12 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         # np.set_printoptions(precision=2, suppress=True)
         # print(f"{calc_weights_print} {self.steering_angle_to_follow} {(current_time - self.__last_line_seen_timestamp)*1000}")
         
-        self.steering_angle_to_follow = np.sum(calc_weights* self.__target_control_angle)
+        self.steering_angle_to_follow = int(np.sum(calc_weights* self.__target_control_angle))
         self.speed_reduction_to_follow = np.sum(calc_weights*self.__speed_coefficient)
 
     def update_line_timeout(self):
         '''Kennlinie zur Reduktion des Timeouts auf Basis der Geschwindigkeit 25% = 0.5s und 100% = 0.05s'''
-        self.__max_line_timeout=0.5+0.8/75*(25-float(self.speed))
+        self.__max_line_timeout=0.5+0.45/75*(25-float(self.speed))
 
     def line_end(self):
         '''stopt das Fahrzeug am Ende der Linie'''
@@ -206,39 +206,30 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             return False
 
 
-    def fahrmodus_5(self, init_speed = 00, steering_angle=90):
+    def fahrmodus_5(self, init_speed = 50, steering_angle=90):
+        if init_speed < 25:
+            print("Geschwindigkeit zu niedrig für den Fahrmodus")
+            return
         self.speed = init_speed
         self.steering_angle = steering_angle
-    #    abfrage ob sich der Untergrund geändert hat => einmalig Kalibrierung durchführen  
-    #    (Erkennungsschwelle die Hälfte zwischen Fußboden und Klebeband)
-    #    self.infrared.cali_references()
-    #    kalibrierte Werte speichern (am besten in config.json)
-    #    self.__calibrated_reference = self.infrared.cali_references()
-        self.get_line_pos()
         self.__last_line_seen_timestamp = time.time()
         while True:
-    #        print(self.infrared.read_digital())
-            #time.sleep(0.01)
-            #while True:#self.steering_angle == None:
             self.follow_line_2()
-            self.update_line_timeout()
-    #            self.steering_angle, self.speed_reduction_to_follow = self.fahrmodus_5.follow_line()
-            #self.speed = max(init_speed * self.speed_reduction_to_follow, 20)
-            #self.steering_angle = self.steering_angle_to_follow
-            # if self.steering_angle < self.steering_angle_to_follow:
-            #     self.steering_angle += 1
-            # if self.steering_angle > self.steering_angle_to_follow:
-            #     self.steering_angle -= 1
             if self.steering_angle_to_follow is None:
                 break
-            self.steering_angle = self.steering_angle_to_follow
-            # self.steering_angle = self.steering_angle_to_follow
-    #        self.steering_angle = 50
+            steering_gradient = self.geraden_gleichung(1, 10,25,100, self.speed)
+            relative_steering_adjustment=self.steering_angle_to_follow-self.steering_angle
+            if relative_steering_adjustment > 0:
+                 self.steering_angle = min(self._steering_angle_max, self.steering_angle+int(min(steering_gradient,relative_steering_adjustment)))
+            if relative_steering_adjustment < 0:
+                 self.steering_angle = max((self.steering_angle + int(max(-steering_gradient,relative_steering_adjustment))),self._steering_angle_min)
+            self.speed = max(int(self.speed_reduction_to_follow*init_speed),25)
+            self.update_line_timeout()   
             self.drive()
-            # time.sleep(0.1)
-            #self.line_lost_in_direction()
 
 
+    def geraden_gleichung(self,startwert, zielwert, start_input, end_input, inp):
+        return startwert+(zielwert-startwert)/(end_input-start_input)*(inp-start_input)
 
 def menue():
     menue_data = [
