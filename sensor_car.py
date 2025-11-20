@@ -6,6 +6,7 @@ from sonic_car import SonicCar
 import pandas as pd
 import re
 from pathlib import Path
+import numpy as np
 
 class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def __init__(self):
@@ -76,19 +77,24 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         
     def get_line_pos(self):
         '''füllt den Ringspeicher mit Messwerten der IR-Sensorleiste, neuste Messung auf Position [0]'''
-        new_value = self.infrared.read_digital()        # Neuen Wert lesen
+        new_value = self.calc_weights                   # Neuen Wert lesen
         self.line_pos.insert(0, new_value)              # Neuen Wert vorne einfügen es entsteht ein Arry mit 4 Elementen
         if len(self.line_pos) > self.line_pos_max_len:  # letztes Element wieder entfernen
             self.line_pos.pop()
-        print(self.line_pos)
-    
-    def get_line_pos_analog(self):
-        '''füllt den Ringspeicher mit Messwerten der IR-Sensorleiste, neuste Messung auf Position [0]'''
-        new_value_analog = self.infrared.read_analog()        # Neuen Wert lesen
-        self.line_pos_analog.insert(0, new_value_analog)              # Neuen Wert vorne einfügen es entsteht ein Arry mit 4 Elementen
-        if len(self.line_pos_analog) > self.line_pos_max_len:  # letztes Element wieder entfernen
-            self.line_pos_analog.pop()
-        print(self.line_pos_analog)
+        # formatted = [[f"{x:.0f}" for x in arr] for arr in self.line_pos]
+        # print(formatted)
+
+        # for arr in self.line_pos:
+        #     print(" ".join(f"{x:.0f}" for x in arr))
+
+
+
+    def format_subarrays(self, arrays, decimals=0):
+        return " ".join(
+            "[" + ", ".join(f"{x:.{decimals}f}" for x in arr) + "]"
+            for arr in arrays
+        )
+
 
     def follow_line(self):
         '''Anhand der Position der Linie wird der Lenkwinkel, sowie Reduktion der Geschwindigkeit zurück gegeben'''
@@ -135,9 +141,10 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.__target_control_angle = np.array([45, 60, 90, 120, 135])
         self.__ground_infrared_reference = [103, 128, 125, 110, 112]
 
-        current_infrared_measurement = np.array(self.infrared.read_analog())
-        distance_to_line_reference = current_infrared_measurement - np.array(self.__calibrated_reference)
-        min_val = np.min(distance_to_line_reference)
+        current_infrared_measurement = np.array(self.infrared.read_analog())   # Messwert z.B. [52 54 54 61 52]
+                                                                               # Kalibrierwert z.B. [131 123 145 138 120]
+        distance_to_line_reference = current_infrared_measurement - np.array(self.__calibrated_reference)   # z.B. [-79. -69. -91. -78. -68.]
+        min_val = np.min(distance_to_line_reference)           # z.B. -91
         current_time = time.time()
         if min_val < 0:
             distance_to_line_reference+=abs(min_val)
@@ -154,15 +161,17 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             elif self.steering_angle_to_follow < self._steering_angle_min:
                 self.steering_angle_to_follow = self._steering_angle_min
             return
-        calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)
-        calc_weights=calc_weights/np.sum(calc_weights)
-
-        # calc_weights_print = calc_weights*10
+        calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)   # z.B. [0.08 0.05 1000. 0.08 0.04]
+        calc_weights=calc_weights/np.sum(calc_weights)   # z.B. [0. 0. 1. 0. 0.]
+        
+        self.calc_weights = calc_weights
         # np.set_printoptions(precision=2, suppress=True)
         # print(f"{calc_weights_print} {self.steering_angle_to_follow} {(current_time - self.__last_line_seen_timestamp)*1000}")
         
         self.steering_angle_to_follow = int(np.sum(calc_weights* self.__target_control_angle))
         self.speed_reduction_to_follow = np.sum(calc_weights*self.__speed_coefficient)
+
+        return self.calc_weights
 
     def update_line_timeout(self):
         '''Kennlinie zur Reduktion des Timeouts auf Basis der Geschwindigkeit 25% = 0.5s und 100% = 0.05s'''
@@ -227,6 +236,20 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             self.update_line_timeout()   
             self.drive()
 
+    def fahrmodus_6(self, init_speed = 50, steering_angle=90):
+        self.speed = init_speed
+        self.steering_angle = steering_angle
+#        self.get_line_pos()
+        self.__last_line_seen_timestamp = time.time()
+        while True:
+            self.follow_line_2()
+            self.get_line_pos()
+            print(format_subarrays(self.line_pos))
+            self.update_line_timeout()
+            if self.steering_angle_to_follow is None:
+                break
+            self.steering_angle = self.steering_angle_to_follow
+            self.drive()
 
     def geraden_gleichung(self,startwert, zielwert, start_input, end_input, inp):
         return startwert+(zielwert-startwert)/(end_input-start_input)*(inp-start_input)
@@ -253,7 +276,7 @@ def main():
     # while running == True:
 
     #   selection = menue()
-    selection ='5'       
+    selection ='6'       
 
     # car.speed = 30
     # car.drive()
