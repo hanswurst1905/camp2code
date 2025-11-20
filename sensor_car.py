@@ -16,17 +16,12 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         #self.__calibrated_reference = [161.5, 153.3, 175.3,	168.2, 150.0]
         self.steering_angle_to_follow = self.steering_angle
         self.infrared.set_references(self.__calibrated_reference)
-        self.line_pos = []
-        self.line_pos_max_len = 5    # Anzahl der gespeicherten Werte
-        [self.line_pos.append([0, 0, 1, 0, 0]) for i in range(self.line_pos_max_len)]
-        self.line_pos_analog = []
-        [self.line_pos_analog.append([0, 0, 1, 0, 0]) for i in range(self.line_pos_max_len)]
-        self.__line_pos_left = [1,0,0,0,0]
-        self.__line_pos_right = [0,0,0,0,1]
+        self.line_pos == [0,0,0,0,0]
         self.steering_angle_to_follow_old = 90
         self.speed_reduction_to_follow_old = 1
         self.__last_line_seen_timestamp = time.time()
         self.__max_line_timeout = 0.5
+        self.__line_lost_counter = 0
 
     def read_infrared_calibration_from_config(self) -> list:
         with open('./software/config.json') as f:
@@ -170,18 +165,22 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
 
     def line_lost_in_direction(self):
         '''Rückmeldung ob die Line links oder rechts aus der Messleiste am Fahrzeug rausgewandert ist'''
-        if self.line_pos == [0,0,0,0,0]:
-            return self.__line_lost_right_counter
-        if self.line_pos == [0,0,0,0,0]:
+        if np.all(self.line_pos == 0) and abs(self.__line_lost_counter) < 2:
             pass
-        # wenn aktueller Messwert = 00000 und der letzte Messwert war 10000 und der vorletzte Messwert war 10000 ist die Linie links zur seite rausgelaufen
-        if self.line_pos[0] == [0,0,0,0,0] and (self.line_pos[1] == self.__line_pos_left and self.line_pos[2] == self.__line_pos_left):
-            print("Linie nach links verloren")
-            return "left"
-        # wenn aktueller Messwert = 00000 und der letzte Messwert war 00001 und der vorletzte Messwert war 00001 ist die Linie rechts zur seite rausgelaufen            
-        if self.line_pos[0] == [0,0,0,0,0] and (self.line_pos[1] == self.__line_pos_right and self.line_pos[2] == self.__line_pos_right):
-            print("Linie nach rechts veroren")
-            return "right"
+        elif self.line_pos[1] == 1:
+            self.__line_lost_counter = 1
+        elif self.line_pos[0] == 1:
+            self.__line_lost_counter = 2
+        elif self.line_pos[3] == 1:
+            self.__line_lost_counter = -1
+        elif self.line_pos[4] == 1:
+            self.__line_lost_counter = -2
+        elif self.line_pos[2] == 1:
+            self.__line_lost_counter = 0
+        elif self.__line_lost_counter == 2:
+            self.__line_lost_counter += 1
+        elif self.__line_lost_counter == -2:
+            self.__line_lost_counter -= 1
 
     def on_line(self):
         '''entscheidet anhand der Werte des Infrarotsensor ob das Fahrzeug auf er Line steht'''            
@@ -222,19 +221,23 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def fahrmodus_6(self, init_speed = 50, steering_angle=90):
         self.speed = init_speed
         self.steering_angle = steering_angle
-        self.__line_lost_left_counter = 0
-        self.__line_lost_right_counter = 0
-#        self.get_line_pos()
+        self.__line_lost_counter = 0
+
         self.__last_line_seen_timestamp = time.time()
         while True:
             self.follow_line_2()
-            self.get_line_pos()
+            self.line_lost_in_direction()
+            self.move_back_to_line()
 
             self.update_line_timeout()
             if self.steering_angle_to_follow is None:
                 break
             self.steering_angle = self.steering_angle_to_follow
             self.drive()
+
+    def move_back_to_line(self):
+        # Mach etwas wenn self.__line_lost_counter eine Grenze erreicht.
+        pass
 
     def geraden_gleichung(self,startwert, zielwert, start_input, end_input, inp):
         return startwert+(zielwert-startwert)/(end_input-start_input)*(inp-start_input)
