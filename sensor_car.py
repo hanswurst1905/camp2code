@@ -77,11 +77,11 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         
     def get_line_pos(self):
         '''füllt den Ringspeicher mit Messwerten der IR-Sensorleiste, neuste Messung auf Position [0]'''
-        new_value = self.calc_weights                   # Neuen Wert lesen
+        new_value = self.calc_weights.round(0).astype(int)                  # Neuen Wert lesen
         self.line_pos.insert(0, new_value)              # Neuen Wert vorne einfügen es entsteht ein Arry mit 4 Elementen
         if len(self.line_pos) > self.line_pos_max_len:  # letztes Element wieder entfernen
             self.line_pos.pop()
-        print(" ".join("[" + ", ".join(f"{x:.0f}" for x in arr) + "]" for arr in self.line_pos))
+        print(" ".join("[" + ", ".join(f"{x}" for x in arr) + "]" for arr in self.line_pos))
 
 
     def follow_line(self):
@@ -264,7 +264,7 @@ def main():
     # while running == True:
 
     #   selection = menue()
-    selection ='5'       
+    selection ='6'       
 
     # car.speed = 30
     # car.drive()
