@@ -7,7 +7,10 @@ class DataLogger():
         self.car = car
 
     def get_log(self):
-        '''gibt Basislog als Dictionary zurück'''
+        '''gibt Basislog als Dictionary zurück\n
+        wenn datalogger vererbt wird kann so erweitert werden -> base_log["name"] = wert\n
+        Return: log{}
+        '''
         self.log = {
             "time": time.time(),
             "speed": self.car.speed,
