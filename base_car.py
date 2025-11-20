@@ -1,16 +1,14 @@
-
-
 from software.basisklassen import*
 import time
 from tabulate import tabulate
 import sys
 import pandas as pd
 from datetime import datetime
-import statistics
 import json
 import re
 from pathlib import Path
-import statistics
+import threading
+from datalogger import DataLogger
 
 class BaseCar():
     '''
@@ -19,6 +17,7 @@ class BaseCar():
     Setter und Getter für Geschwindigkeit und Lenkwinkel
     '''
     def __init__(self):
+        # self.log = DataLogger()
         self.__turning_offset = 0
         self._steering_angle_min = 45
         self._steering_angle_max = 135  
@@ -39,21 +38,22 @@ class BaseCar():
         self.logs = pd.DataFrame()
         self._log_saved = False
         self._state = 'init'
-        self.__time_init = time.time()
-        self._drive_distance = 0
-        
-        self.__time_init = time.time()
-        self._drive_distance = 0
 
 
     def save_logs(self):
+        '''
+        speichert den dataframe als csv Datei in ./logs
+        '''
+        Path('logs').mkdir(exist_ok=True)
         print(f'save log für: {id(self)}')
         if self._log_saved:
             print('log bereits gespeichert')
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"logs/{timestamp}_baseCarLogging.log"
-        self.logs.to_csv(filename,index=False)
-        self._log_saved = True
+        if not self.logs.empty:
+            self.logs.to_csv(filename,index=False)
+            # self._log_saved = True
+            self.logs = pd.DataFrame()
 
     @property
     def steering_angle(self):
@@ -64,6 +64,9 @@ class BaseCar():
     
     @steering_angle.setter
     def steering_angle(self, angle):
+        '''
+        setter für steering angle, prüfung auf werte zwischen min und max
+        '''
         try:
             if self._steering_angle_min <= angle <= self._steering_angle_max:
                 self._steering_angle = angle
@@ -83,6 +86,9 @@ class BaseCar():
  
     @speed.setter
     def speed(self, value):
+        '''
+        setter für speed, prüfung auf werte zwischen min und max
+        '''
         try:
             if self._speed_min <= value <= self._speed_max:
                 self._speed = value
@@ -95,20 +101,22 @@ class BaseCar():
 
     @property
     def direction(self):
+        '''
+        Return: direction (Fahrtrichtung)
+        '''
         return self._direction
+    
     @property
     def state(self):
+        '''
+        Return: state (Fahrzustand)
+        '''
         return self._state
-    @property
-    def drive_time(self):
-        self._drive_time = time.time() - self.__time_init
-        print ("self.drive_time", self._drive_time) 
-        return self._drive_time
-    @property
-    def drive_distance(self):
-        self._drive_distance = self.drive_time * self._speed
-        print ("Distance", self._drive_distance)
-        return self._drive_distance
+    
+    @state.setter
+    def state(self,value):
+        self._state = value
+
 
     def start_calibration(self, serial_number):
         print(f"Seriennummer: {serial_number} unbekannt. Starte Kalibrierung:\n ACHTUNG Bitte PiCAR anheben.")
@@ -195,37 +203,49 @@ class BaseCar():
         leitet die Fahrbefehle an basisklassen weiter,
         dazu können BaseCar().speed und BaseCar().steering_angle beschrieben werden
         '''
-        self._state = 'drive'
-        if self.__steering_angle_last != self.steering_angle:
-            self.__steering_angle_last = self.steering_angle
-            self.frontwheels.turn(self._steering_angle)
-        if self.__speed_last != self.speed:
-            self.__speed_last = self.speed
-            if self._speed > 0: 
-                self.backwheels.speed=self._speed
-                self.backwheels.forward()
-                self._direction = 1
-            elif self._speed < 0:
-                self.backwheels.speed=self._speed * - 1
-                self.backwheels.backward()
-                self._direction = -1
-            elif self.speed == 0:
-                self.backwheels.speed=self._speed
-                self.backwheels.forward()
-                self._direction = 0
-            print(f'self.state = {self.state}, speed_last = {self.__speed_last}, drive_time = {self.drive_time}')
+        if self.state is not 'stop':
+            self.state = 'drive'
+            if self.__steering_angle_last != self.steering_angle:
+                self.__steering_angle_last = self.steering_angle
+                self.frontwheels.turn(self._steering_angle)
+            if self.__speed_last != self.speed:
+                self.__speed_last = self.speed
+                if self._speed > 0: 
+                    self.backwheels.speed=self._speed
+                    self.backwheels.forward()
+                    self._direction = 1
+                elif self._speed < 0:
+                    self.backwheels.speed=self._speed * - 1
+                    self.backwheels.backward()
+                    self._direction = -1
+                elif self.speed == 0:
+                    self.backwheels.speed=self._speed
+                    self.backwheels.forward()
+                    self._direction = 0
 
 
     def stop(self):
+        '''
+        führt backwheels.stop() in der basisklasse aus
+        '''
         self.speed = 0
         self.backwheels.stop()
         self._direction = 0
-        self._state = 'stop'
+        self.state = 'stop'
 
     def fahrmodus_1(self):
+        '''
+        führt fahrmodus_1 aus
+        '''
         self.fahrmodus(selection='1')
 
     def fahrmodus_2(self):
+        '''
+        führt fahrmodus_2 aus
+        '''
+        # selection = '2'
+        # t = threading.Thread(target=self.fahrmodus, args=(selection,))
+        # t.start()
         self.fahrmodus(selection='2')
 
     def fahrmodus_3(self):
@@ -235,7 +255,10 @@ class BaseCar():
         pass
 
     def fahrmodus(self,selection):
-        print(selection)
+        '''
+        Ablaufsteuerung für die gewählten Fahrmodi
+        '''
+        print('state:',self.state)
         try:
             if selection == '1': #Fahrmodus1
                 speed_lst = [30,0,-30]
@@ -253,10 +276,17 @@ class BaseCar():
                 time_sleep = df["drive_time"].tolist()
 
             for i in range(len(speed_lst)):
-                self.speed, self.steering_angle = speed_lst[i], angle_lst[i]
-                self.drive()
-                DataLogger(self).write_log()
-                time.sleep(time_sleep[i])
+                if self.state in ['drive', 'ready']:
+                    print('state for:',self.state)
+                    self.speed, self.steering_angle = speed_lst[i], angle_lst[i]
+                    self.drive()
+                    DataLogger(self).write_log()
+                    # self.log.write_log(self)
+                    time.sleep(time_sleep[i])
+                elif self.state == 'stop':
+                    break
+
+                
             self.speed = 0
             self.stop()
 
@@ -267,27 +297,28 @@ class BaseCar():
             self.stop()
         except KeyError as e:
             print(f'ein Fehler ist aufgetreten, Listen überprüfen -> KeyError {e}')
+        print('state ende:',self.state)
 
-class DataLogger():
+# class DataLogger():
 
-    def __init__(self,car):
-        self.car = car
+#     def __init__(self,car):
+#         self.car = car
 
-    def get_log(self):
-        '''gibt Basislog als Dictionary zurück'''
-        self.log = {
-            "time": time.time(),
-            "speed": abs(self.car.speed),
-            "direction": self.car.direction,
-            "steering_angle": self.car.steering_angle
-        }
-        return self.log
+#     def get_log(self):
+#         '''gibt Basislog als Dictionary zurück'''
+#         self.log = {
+#             "time": time.time(),
+#             "speed": self.car.speed,
+#             "direction": self.car.direction,
+#             "steering_angle": self.car.steering_angle
+#         }
+#         return self.log
 
-    def write_log(self):
-        '''schreibt die logging Daten'''
-        log_entry = self.get_log()
-        self.car.logs = pd.concat([self.car.logs,pd.DataFrame([log_entry])], ignore_index=True)
-        # print(self.car.logs.head())
+#     def write_log(self):
+#         '''schreibt die logging Daten'''
+#         log_entry = self.get_log()
+#         self.car.logs = pd.concat([self.car.logs,pd.DataFrame([log_entry])], ignore_index=True)
+#         # print(self.car.logs.head())
 
 def menue():
     menue_data = [
@@ -307,11 +338,15 @@ def main():
     while running == True:
         selection = menue()
         if selection in ['0','1']:
+            car.state = 'ready'
             car.fahrmodus(selection)
         elif selection == '2':
+            car.state = 'ready'
             car.fahrmodus(selection)
         elif selection == '3':
+            car.state = 'ready'
             car.fahrmodus(selection)
+            
         elif selection == '4':
             car.save_logs()
             running = False

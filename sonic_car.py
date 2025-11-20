@@ -3,6 +3,7 @@ import time
 from tabulate import tabulate
 import sys
 from base_car import BaseCar
+import threading
 
 class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
     def __init__(self):
@@ -10,6 +11,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         self._ultrasonic = Ultrasonic()
         self.__user_defined_speed = 0
         self.__last_pos_distance = -1
+        self._gpio_lock = threading.Lock()
 
     def get_distance(self) -> int:
         """ 
@@ -17,12 +19,14 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         Bei Sensorfehler "-3: Negative distance" wird ein Exception geschmissen.
         Restliche Sensorfehler werden durch den zuletzt bekannten Wert ersetzt oder bei fehlender Historie durch 400 cm.
         """
-        distance = self._ultrasonic.distance()
-        if distance == -3:
-            raise Exception("Sensorfehler: negative Distanz")
-        elif distance > 0:
-            self.__last_pos_distance = distance
-        return self.__last_pos_distance
+        with self._gpio_lock:
+            distance = self._ultrasonic.distance()
+            if distance == -3:
+                print("fehler -3")
+                raise Exception("Sensorfehler: negative Distanz")
+            elif distance > 0:
+                self.__last_pos_distance = distance
+            return self.__last_pos_distance
 
     def get_safe_distance(self) -> int:
         """
@@ -30,9 +34,9 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         """
         try:
             distance = self.get_distance()
-        except:
+        except Exception as e:
             self.stop()
-            print("Fehler vom Ultraschallsensor")
+            print(f"Fehler vom Ultraschallsensor: {e}")
         
         return distance
     
@@ -54,11 +58,9 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
             return
         calc_new_target_speed_from_lut = max(distance,10) * 2   # damit erfolg begrenzung aus Speed_min = 20
         if calc_new_target_speed_from_lut < self.speed:
-            print(f"Hindernis erkannt reduziere Geschwindigkeit von {self.speed} auf {calc_new_target_speed_from_lut}")
             self.speed = calc_new_target_speed_from_lut
         elif self.__user_defined_speed > calc_new_target_speed_from_lut > self.speed:
             self.speed +=1
-            print(f"Hindernis entfernt sich, Geschwindigkeit von {self.speed} auf {self.speed + 1}")            
 
 #     @BaseCar.speed.setter   # Dekorator überschreibt den aus der BaseCar geerbten Setter der Property "speed"
 #     def speed(self, value):
@@ -68,29 +70,28 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
 #         BaseCar.speed.__set__(self, value)                              # macht das gleich wie Zeile drüber6
 #         self.__user_defined_speed = value # neu hinzugefügtes Attribut
 
-    def fahrmodus_3(self, init_speed = 50, steering_angle=90):
+    def fahrmodus_3(self, init_speed = 35, steering_angle=90):
         self.__user_defined_speed = init_speed
         self.speed = init_speed
         self.steering_angle = steering_angle
         distance = -1
         while distance == -1:
             distance = self.get_safe_distance()
-        while distance > 4 or self.direction == -1 :
-#            print(f'Distance: {distance}')
+        while distance > 10 or self.direction == -1 :
             self.calc_approach_speed(distance)
             distance = self.get_safe_distance()
-            self.drive() #vorwärts
-        self.stop()
+            if self.state == 'stop': break
+        self.speed = 0
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
-    def fahrmodus_4(self, init_speed = 60, steering_angle = 90):
+    def fahrmodus_4(self, init_speed = 35, steering_angle = 90):
         while True:
             self.fahrmodus_3(init_speed,steering_angle)
             self.steering_angle = 45
             self.speed = -30
-            self.drive()
             time.sleep(2)
-            self.stop()
+            self.speed = 0
+            if self.state == 'stop': break
 
 
 
@@ -121,8 +122,10 @@ def main():
         elif selection == '2':
             car.fahrmodus_2()
         elif selection == '3':
+            car.drive()
             car.fahrmodus_3()
         elif selection == '4':
+            car.drive()
             car.fahrmodus_4()
         elif selection == '5':
             running = False
