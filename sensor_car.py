@@ -6,6 +6,7 @@ from sonic_car import SonicCar
 import pandas as pd
 import re
 from pathlib import Path
+import numpy as np
 
 class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def __init__(self):
@@ -15,17 +16,12 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         #self.__calibrated_reference = [161.5, 153.3, 175.3,	168.2, 150.0]
         self.steering_angle_to_follow = self.steering_angle
         self.infrared.set_references(self.__calibrated_reference)
-        self.line_pos = []
-        self.line_pos_max_len = 5    # Anzahl der gespeicherten Werte
-        [self.line_pos.append([0, 0, 1, 0, 0]) for i in range(self.line_pos_max_len)]
-        self.line_pos_analog = []
-        [self.line_pos_analog.append([0, 0, 1, 0, 0]) for i in range(self.line_pos_max_len)]
-        self.__line_pos_left = [1,0,0,0,0]
-        self.__line_pos_right = [0,0,0,0,1]
+        self.line_pos = [0,0,0,0,0]
         self.steering_angle_to_follow_old = 90
         self.speed_reduction_to_follow_old = 1
         self.__last_line_seen_timestamp = time.time()
         self.__max_line_timeout = 0.5
+        self.__line_lost_counter = 0
 
     def read_infrared_calibration_from_config(self) -> list:
         with open('./software/config.json') as f:
@@ -73,22 +69,8 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             diff = np.array(object=hell) - np.array(dunkel)
             print(*diff, sep='\t')
             print(f"mittlerer Hell-Dunkel-Differenz {np.mean(diff)}")
-        
-    def get_line_pos(self):
-        '''füllt den Ringspeicher mit Messwerten der IR-Sensorleiste, neuste Messung auf Position [0]'''
-        new_value = self.infrared.read_digital()        # Neuen Wert lesen
-        self.line_pos.insert(0, new_value)              # Neuen Wert vorne einfügen es entsteht ein Arry mit 4 Elementen
-        if len(self.line_pos) > self.line_pos_max_len:  # letztes Element wieder entfernen
-            self.line_pos.pop()
-        print(self.line_pos)
-    
-    def get_line_pos_analog(self):
-        '''füllt den Ringspeicher mit Messwerten der IR-Sensorleiste, neuste Messung auf Position [0]'''
-        new_value_analog = self.infrared.read_analog()        # Neuen Wert lesen
-        self.line_pos_analog.insert(0, new_value_analog)              # Neuen Wert vorne einfügen es entsteht ein Arry mit 4 Elementen
-        if len(self.line_pos_analog) > self.line_pos_max_len:  # letztes Element wieder entfernen
-            self.line_pos_analog.pop()
-        print(self.line_pos_analog)
+
+
 
     def follow_line(self):
         '''Anhand der Position der Linie wird der Lenkwinkel, sowie Reduktion der Geschwindigkeit zurück gegeben'''
@@ -131,13 +113,15 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         print(self.speed_reduction_to_follow)
 
     def follow_line_2(self):
-        self.__speed_coefficient = [0.5, 0.75, 1, 0.75, 1]
-        self.__target_control_angle = [45, 60, 90, 120, 135]
+        self.__speed_coefficient = np.array([0.5, 0.75, 1, 0.75, 0.5])
+        self.__target_control_angle = np.array([45, 60, 90, 120, 135])
+
         self.__ground_infrared_reference = [103, 128, 125, 110, 112]
 
-        current_infrared_measurement = np.array(self.infrared.read_analog())
-        distance_to_line_reference = current_infrared_measurement - np.array(self.__calibrated_reference)
-        min_val = np.min(distance_to_line_reference)
+        current_infrared_measurement = np.array(self.infrared.read_analog())   # Messwert z.B. [52 54 54 61 52]
+        self.line_pos = np.where(current_infrared_measurement < self.__calibrated_reference, 1, 0)                                                                       # Kalibrierwert z.B. [131 123 145 138 120]
+        distance_to_line_reference = current_infrared_measurement - np.array(self.__calibrated_reference)   # z.B. [-79. -69. -91. -78. -68.]
+        min_val = np.min(distance_to_line_reference)           # z.B. -91
         current_time = time.time()
         if min_val < 0:
             distance_to_line_reference+=abs(min_val)
@@ -154,19 +138,18 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             elif self.steering_angle_to_follow < self._steering_angle_min:
                 self.steering_angle_to_follow = self._steering_angle_min
             return
-        calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)
-        calc_weights=calc_weights/np.sum(calc_weights)
-
-        # calc_weights_print = calc_weights*10
+        calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)   # z.B. [0.08 0.05 1000. 0.08 0.04]
+        calc_weights=calc_weights/np.sum(calc_weights)   # z.B. [0. 0. 1. 0. 0.]
+        
         # np.set_printoptions(precision=2, suppress=True)
         # print(f"{calc_weights_print} {self.steering_angle_to_follow} {(current_time - self.__last_line_seen_timestamp)*1000}")
         
-        self.steering_angle_to_follow = np.sum(calc_weights* self.__target_control_angle)
+        self.steering_angle_to_follow = int(np.sum(calc_weights* self.__target_control_angle))
         self.speed_reduction_to_follow = np.sum(calc_weights*self.__speed_coefficient)
 
     def update_line_timeout(self):
         '''Kennlinie zur Reduktion des Timeouts auf Basis der Geschwindigkeit 25% = 0.5s und 100% = 0.05s'''
-        self.__max_line_timeout=0.5+0.8/75*(25-float(self.speed))
+        self.__max_line_timeout=0.5+0.45/75*(25-float(self.speed))
 
     def line_end(self):
         '''stopt das Fahrzeug am Ende der Linie'''
@@ -182,14 +165,25 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
 
     def line_lost_in_direction(self):
         '''Rückmeldung ob die Line links oder rechts aus der Messleiste am Fahrzeug rausgewandert ist'''
-        # wenn aktueller Messwert = 00000 und der letzte Messwert war 10000 und der vorletzte Messwert war 10000 ist die Linie links zur seite rausgelaufen
-        if self.line_pos[0] == [0,0,0,0,0] and (self.line_pos[1] == self.__line_pos_left and self.line_pos[2] == self.__line_pos_left):
-            print("Linie nach links verloren")
-            return "left"
-        # wenn aktueller Messwert = 00000 und der letzte Messwert war 00001 und der vorletzte Messwert war 00001 ist die Linie rechts zur seite rausgelaufen            
-        if self.line_pos[0] == [0,0,0,0,0] and (self.line_pos[1] == self.__line_pos_right and self.line_pos[2] == self.__line_pos_right):
-            print("Linie nach rechts veroren")
-            return "right"
+        if np.all(self.line_pos == 0) and abs(self.__line_lost_counter) < 2:
+            pass
+        elif self.line_pos[3] == 1:
+            self.__line_lost_counter = -1
+        elif self.line_pos[4] == 1 and self.__line_lost_counter == -1:
+            self.__line_lost_counter = -2
+        elif self.line_pos[1] == 1:
+            self.__line_lost_counter = -1
+        elif self.line_pos[0] == 1 and self.__line_lost_counter == 1:
+            self.__line_lost_counter = 2
+        elif self.line_pos[2] == 1:
+            self.__line_lost_counter = 0
+        elif self.__line_lost_counter == 2:
+            self.__line_lost_counter += 1
+            print('Rechtskurve verlassen')
+        elif self.__line_lost_counter == -2:
+            self.__line_lost_counter -= 1
+            print('Linkskurve verlassen')
+        print(self.__line_lost_counter)
 
     def on_line(self):
         '''entscheidet anhand der Werte des Infrarotsensor ob das Fahrzeug auf er Line steht'''            
@@ -206,45 +200,90 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             return False
 
 
-    def fahrmodus_5(self, init_speed = 30, steering_angle=90):
+    def fahrmodus_5(self, init_speed = 80, steering_angle=90):
+        if init_speed < 25:
+            print("Geschwindigkeit zu niedrig für den Fahrmodus")
+            return
         self.speed = init_speed
+        self.speed_reduction_to_follow = init_speed
         self.steering_angle = steering_angle
-    #    abfrage ob sich der Untergrund geändert hat => einmalig Kalibrierung durchführen  
-    #    (Erkennungsschwelle die Hälfte zwischen Fußboden und Klebeband)
-    #    self.infrared.cali_references()
-    #    kalibrierte Werte speichern (am besten in config.json)
-    #    self.__calibrated_reference = self.infrared.cali_references()
-        self.get_line_pos()
         self.__last_line_seen_timestamp = time.time()
         # while self.state == 'drive':
         while True:
-            # if self.speed == 0: self.speed = init_speed
-    #        print(self.infrared.read_digital())
-            #time.sleep(0.01)
-            #while True:#self.steering_angle == None:
             self.follow_line_2()
-            self.update_line_timeout()
-    #            self.steering_angle, self.speed_reduction_to_follow = self.fahrmodus_5.follow_line()
-            #self.speed = max(init_speed * self.speed_reduction_to_follow, 20)
-            #self.steering_angle = self.steering_angle_to_follow
-            # if self.steering_angle < self.steering_angle_to_follow:
-            #     self.steering_angle += 1
-            # if self.steering_angle > self.steering_angle_to_follow:
-            #     self.steering_angle -= 1
             if self.steering_angle_to_follow is None:
                 break
-            self.steering_angle = self.steering_angle_to_follow
+            steering_gradient = self.geraden_gleichung(1, 10,25,100, self.speed)
+            relative_steering_adjustment=self.steering_angle_to_follow-self.steering_angle
+            if relative_steering_adjustment > 0:
+                 self.steering_angle = min(self._steering_angle_max, self.steering_angle+int(min(steering_gradient,relative_steering_adjustment)))
+            if relative_steering_adjustment < 0:
+                 self.steering_angle = max((self.steering_angle + int(max(-steering_gradient,relative_steering_adjustment))),self._steering_angle_min)
+            self.speed = max(int(self.speed_reduction_to_follow*init_speed),25)
+            self.update_line_timeout()   
+
             if self.state in ['ready','drive']: self.drive()
-            # self.steering_angle = self.steering_angle_to_follow
-    #        self.steering_angle = 50
-            # self.drive()
-            # time.sleep(0.1)
-            #self.line_lost_in_direction()
+            if self.state == 'stop':
+                print('sensorCar Ende')
+                break
+
+    def fahrmodus_6(self, init_speed = 25, steering_angle=90):
+        if init_speed < 25:
+            print("Geschwindigkeit zu niedrig für den Fahrmodus")
+            return
+        self.speed = init_speed
+        self.speed_reduction_to_follow = init_speed
+        self.steering_angle = steering_angle
+        self.__last_line_seen_timestamp = time.time()
+        self.__line_lost_counter = 0
+        while True:
+            self.line_lost_in_direction()
+            self.move_back_to_line()
+            self.follow_line_2()
+
+            if self.steering_angle_to_follow is None:
+                break
+            steering_gradient = self.geraden_gleichung(1, 10,25,100, self.speed)
+            relative_steering_adjustment=self.steering_angle_to_follow-self.steering_angle
+            if relative_steering_adjustment > 0:
+                 self.steering_angle = min(self._steering_angle_max, self.steering_angle+int(min(steering_gradient,relative_steering_adjustment)))
+            if relative_steering_adjustment < 0:
+                 self.steering_angle = max((self.steering_angle + int(max(-steering_gradient,relative_steering_adjustment))),self._steering_angle_min)
+            self.speed = max(int(self.speed_reduction_to_follow*init_speed),25)
+            self.update_line_timeout()   
+            if self.state in ['ready','drive']: self.drive()
             if self.state == 'stop':
                 print('sensorCar Ende')
                 break
 
 
+    def move_back_to_line(self):
+        # Mach etwas wenn self.__line_lost_counter eine Grenze erreicht.
+        if abs(self.__line_lost_counter) == 3:
+            sign_of_line_lost = np.sign(self.__line_lost_counter)
+            self.speed = -25
+            self.steering_angle = 90 + sign_of_line_lost*45
+            if self.state in ['ready','drive']: self.drive()
+            if self.state == 'stop':
+                print('sensorCar Ende')
+                return
+            if sign_of_line_lost < 0:
+                infrared_sensor_selector = 0
+            else:
+                infrared_sensor_selector = 4
+            while 1 != self.infrared.read_digital()[infrared_sensor_selector]:
+                print(self.infrared.read_digital())
+            #while True:
+                pass
+            print('Fahrzeug wieder auf Spur')
+            self.__line_lost_counter = 0
+            self.speed=0
+            self.steering_angle=90
+            self.__last_line_seen_timestamp = time.time()
+
+
+    def geraden_gleichung(self,startwert, zielwert, start_input, end_input, inp):
+        return startwert+(zielwert-startwert)/(end_input-start_input)*(inp-start_input)
 
 def menue():
     menue_data = [
@@ -268,14 +307,14 @@ def main():
     # while running == True:
 
     #   selection = menue()
-    selection ='5'       
+    selection ='6'       
 
     # car.speed = 30
     # car.drive()
     # print(car.infrared.read_digital())
     # print(car.infrared.get_average(mount=3000))
     # #time.sleep(1)
-    # car.stop()
+    #car.stop()
 
     if selection == '1':
         car.fahrmodus_1()
@@ -291,6 +330,8 @@ def main():
         car.fahrmodus_6()
     elif selection == '7':
         running = False
+    car.stop()
+    car.steering_angle=90
 
 
 if __name__ == "__main__":
