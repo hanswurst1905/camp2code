@@ -260,7 +260,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def move_back_to_line(self):
         # Mach etwas wenn self.__line_lost_counter eine Grenze erreicht.
         if abs(self.__line_lost_counter) == 3:
-            sign_of_line_lost = np.sign(self.__line_lost_counter)
+            sign_of_line_lost = int(np.sign(self.__line_lost_counter))
             self.speed = -25
             self.steering_angle = 90 + sign_of_line_lost*45
             if self.state in ['ready','drive']: self.drive()
