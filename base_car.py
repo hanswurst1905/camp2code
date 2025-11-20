@@ -10,6 +10,7 @@ import statistics
 import json
 import re
 from pathlib import Path
+import statistics
 
 class BaseCar():
     '''
@@ -19,12 +20,12 @@ class BaseCar():
     '''
     def __init__(self):
         self.__turning_offset = 0
-        self.__steering_angle_min = 45
-        self.__steering_angle_max = 135  
+        self._steering_angle_min = 45
+        self._steering_angle_max = 135  
         self._steering_angle = 90
         self.__steering_angle_last = self.steering_angle
-        self.__speed_min = -100
-        self.__speed_max = 100
+        self._speed_min = -100
+        self._speed_max = 100
         self._speed = 0
         self.__speed_last = self._speed
         self.__min_wheel_speed = 0
@@ -41,6 +42,8 @@ class BaseCar():
         self.__time_init = time.time()
         self._drive_distance = 0
         
+        self.__time_init = time.time()
+        self._drive_distance = 0
 
 
     def save_logs(self):
@@ -62,12 +65,13 @@ class BaseCar():
     @steering_angle.setter
     def steering_angle(self, angle):
         try:
-            if self.__steering_angle_min <= angle <= self.__steering_angle_max:
+            if self._steering_angle_min <= angle <= self._steering_angle_max:
                 self._steering_angle = angle
             else:
-                raise Exception(f"new angle {angle} have to be between {self.__steering_angle_min} and {self.__steering_angle_max}")
+                raise Exception(f"new angle {angle} have to be between {self._steering_angle_min} and {self._steering_angle_max}")
         except Exception as e:
             print(f'Fehler: {e}\nSkript wird abgebrochen')
+            self.stop()
             sys.exit()
 
     @property
@@ -80,12 +84,13 @@ class BaseCar():
     @speed.setter
     def speed(self, value):
         try:
-            if self.__speed_min <= value <= self.__speed_max:
+            if self._speed_min <= value <= self._speed_max:
                 self._speed = value
             else:
-                raise Exception(f"new Speed {value} have to be between {self.__speed_min} and {self.__speed_max}")
+                raise Exception(f"new Speed {value} have to be between {self._speed_min} and {self._speed_max}")
         except Exception as e:
             print(f'FEHLER!!! {e}\nSkript wird abgebrochen')
+            self.stop()
             sys.exit()
 
     @property
@@ -178,7 +183,9 @@ class BaseCar():
             if new_config != None:
                 config_file.update(new_config)
                 with open('./software/config.json','w') as f:
-                    json.dump(config_file, f)
+                    json.dump(config_file, f, sort_keys=True, indent=4)
+            else:
+                return
 
         self.__turning_offset=config_file[serial_number]["turning_offset"]
         self.__min_wheel_speed=config_file[serial_number]["min_wheel_speed"]
