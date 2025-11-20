@@ -74,14 +74,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             diff = np.array(object=hell) - np.array(dunkel)
             print(*diff, sep='\t')
             print(f"mittlerer Hell-Dunkel-Differenz {np.mean(diff)}")
-        
-    def get_line_pos(self):
-        '''füllt den Ringspeicher mit Messwerten der IR-Sensorleiste, neuste Messung auf Position [0]'''
-        new_value = self.calc_weights.round(0).astype(int)                  # Neuen Wert lesen
-        self.line_pos.insert(0, new_value)              # Neuen Wert vorne einfügen es entsteht ein Arry mit 4 Elementen
-        if len(self.line_pos) > self.line_pos_max_len:  # letztes Element wieder entfernen
-            self.line_pos.pop()
-        print(" ".join("[" + ", ".join(f"{x}" for x in arr) + "]" for arr in self.line_pos))
+
 
 
     def follow_line(self):
@@ -152,14 +145,12 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)   # z.B. [0.08 0.05 1000. 0.08 0.04]
         calc_weights=calc_weights/np.sum(calc_weights)   # z.B. [0. 0. 1. 0. 0.]
         
-        self.calc_weights = calc_weights
+        self.line_pos = calc_weights.round(0).astype(int) 
         # np.set_printoptions(precision=2, suppress=True)
         # print(f"{calc_weights_print} {self.steering_angle_to_follow} {(current_time - self.__last_line_seen_timestamp)*1000}")
         
         self.steering_angle_to_follow = int(np.sum(calc_weights* self.__target_control_angle))
         self.speed_reduction_to_follow = np.sum(calc_weights*self.__speed_coefficient)
-
-        return self.calc_weights
 
     def update_line_timeout(self):
         '''Kennlinie zur Reduktion des Timeouts auf Basis der Geschwindigkeit 25% = 0.5s und 100% = 0.05s'''
@@ -179,6 +170,10 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
 
     def line_lost_in_direction(self):
         '''Rückmeldung ob die Line links oder rechts aus der Messleiste am Fahrzeug rausgewandert ist'''
+        if self.line_pos == [0,0,0,0,0]:
+            return self.__line_lost_right_counter
+        if self.line_pos == [0,0,0,0,0]:
+            pass
         # wenn aktueller Messwert = 00000 und der letzte Messwert war 10000 und der vorletzte Messwert war 10000 ist die Linie links zur seite rausgelaufen
         if self.line_pos[0] == [0,0,0,0,0] and (self.line_pos[1] == self.__line_pos_left and self.line_pos[2] == self.__line_pos_left):
             print("Linie nach links verloren")
@@ -227,6 +222,8 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def fahrmodus_6(self, init_speed = 50, steering_angle=90):
         self.speed = init_speed
         self.steering_angle = steering_angle
+        self.__line_lost_left_counter = 0
+        self.__line_lost_right_counter = 0
 #        self.get_line_pos()
         self.__last_line_seen_timestamp = time.time()
         while True:
