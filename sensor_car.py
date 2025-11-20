@@ -156,12 +156,17 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             return
         calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)
         calc_weights=calc_weights/np.sum(calc_weights)
+
+        # calc_weights_print = calc_weights*10
+        # np.set_printoptions(precision=2, suppress=True)
+        # print(f"{calc_weights_print} {self.steering_angle_to_follow} {(current_time - self.__last_line_seen_timestamp)*1000}")
+        
         self.steering_angle_to_follow = np.sum(calc_weights* self.__target_control_angle)
         self.speed_reduction_to_follow = np.sum(calc_weights*self.__speed_coefficient)
 
     def update_line_timeout(self):
         '''Kennlinie zur Reduktion des Timeouts auf Basis der Geschwindigkeit 25% = 0.5s und 100% = 0.05s'''
-        self.__max_line_timeout=0.65 - 0.45/75*float(self.speed)
+        self.__max_line_timeout=0.5+0.8/75*(25-float(self.speed))
 
     def line_end(self):
         '''stopt das Fahrzeug am Ende der Linie'''
@@ -201,7 +206,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             return False
 
 
-    def fahrmodus_5(self, init_speed = 100, steering_angle=90):
+    def fahrmodus_5(self, init_speed = 00, steering_angle=90):
         self.speed = init_speed
         self.steering_angle = steering_angle
     #    abfrage ob sich der Untergrund geändert hat => einmalig Kalibrierung durchführen  
@@ -232,8 +237,6 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             self.drive()
             # time.sleep(0.1)
             #self.line_lost_in_direction()
-
-
 
 
 
