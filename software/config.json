@@ -1,4 +1,5 @@
 {
+{
     "000000000000000": {
         "forward_A": 0,
         "forward_B": 0,
@@ -26,6 +27,17 @@
         "infrared_calibrated_reference_4": 120.0,
         "min_wheel_speed": 20,
         "turning_offset": 5
+    },
+    "10000000bf421e25": {
+        "forward_A": 0,
+        "forward_B": 0,
+        "infrared_calibrated_reference_0": 6.0,
+        "infrared_calibrated_reference_1": 7.0,
+        "infrared_calibrated_reference_2": 7.0,
+        "infrared_calibrated_reference_3": 3.0,
+        "infrared_calibrated_reference_4": 3.0,
+        "min_wheel_speed": 37,
+        "turning_offset": 0
     },
     "10000000e295ae03": {
         "forward_A": 0,
