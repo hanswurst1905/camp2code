@@ -22,7 +22,8 @@ class SensorDashboard(DataLogger):
         self.car = car
         # self.log = car.log
         self.logs_path = "logs"
-        self.available_logs = [f for f in os.listdir(self.logs_path) if f.endswith(".log")]
+        # self.available_logs = [f for f in os.listdir(self.logs_path) if f.endswith(".log")]
+        self.available_logs =  []
         # self.is_driving = False  # Fahrstatus
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
         self._setup_layout()
