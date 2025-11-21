@@ -261,9 +261,6 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             if self.speed == 0:
                 self.speed = 25
 
-            if counter == 0:    # wird alle 3 Rechenschritte ausgeführt")
-                if (self.speed + 1) < init_speed:
-                    self.speed +=1
             #self.speed = min(self.speed, init_speed)
             self.follow_line_2()
             target_speed = max(min(int(self.speed_reduction_to_follow*init_speed),100),25)
@@ -271,7 +268,10 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             if counter == 0:    # wird alle 3 Rechenschritte ausgeführt")
                 if (self.speed + 1) < target_speed:
                     self.speed +=1
-            self.update_line_timeout()
+            elif target_speed < self.speed:
+                self.speed -=1
+                #self.speed = target_speed
+#            self.update_line_timeout()
             self.line_lost_in_direction()
             print(f"line_pos {self.line_pos} steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
             if self.steering_angle_to_follow is None:
