@@ -175,7 +175,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         min_val = np.min(distance_to_line_reference)           # z.B. -91
         current_time = time.time()
         if min_val < 0:
-            distance_to_line_reference+=abs(min_val)
+            distance_to_line_reference[np.argmin(distance_to_line_reference)] = 0
             self.__last_line_seen_timestamp = current_time
         elif (current_time - self.__last_line_seen_timestamp) > self.__max_line_timeout:
             print(f"Keine Linie seit {self.__max_line_timeout}s gesehen => PiCar stoppt")
