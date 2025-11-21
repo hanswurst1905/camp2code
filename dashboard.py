@@ -323,12 +323,7 @@ class SensorDashboard(DataLogger):
         def update_values(speed, angle):
             self.car.speed = speed
             self.car.steering_angle = angle
-            if car.state in ['ready','drive']:
-                self.car.drive()
-                pass
-            if self.car.state == 'drive':
-                # self.log.write_log()
-                pass
+            self.car.drive()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
         @self.app.callback(

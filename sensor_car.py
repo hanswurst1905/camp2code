@@ -183,7 +183,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         elif self.__line_lost_counter == -2:
             self.__line_lost_counter -= 1
             print('Linkskurve verlassen')
-        print(self.__line_lost_counter)
+        # print(self.__line_lost_counter)
 
     def on_line(self):
         '''entscheidet anhand der Werte des Infrarotsensor ob das Fahrzeug auf er Line steht'''            
@@ -200,7 +200,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             return False
 
 
-    def fahrmodus_5(self, init_speed = 80, steering_angle=90):
+    def fahrmodus_5(self, init_speed = 40, steering_angle=90):
         if init_speed < 25:
             print("Geschwindigkeit zu niedrig für den Fahrmodus")
             return
@@ -221,8 +221,8 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                  self.steering_angle = max((self.steering_angle + int(max(-steering_gradient,relative_steering_adjustment))),self._steering_angle_min)
             self.speed = max(int(self.speed_reduction_to_follow*init_speed),25)
             self.update_line_timeout()   
-
-            if self.state in ['ready','drive']: self.drive()
+            self.drive()
+            # if self.state in ['ready','drive']: self.drive()
             if self.state == 'stop':
                 print('sensorCar Ende')
                 break
@@ -251,7 +251,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                  self.steering_angle = max((self.steering_angle + int(max(-steering_gradient,relative_steering_adjustment))),self._steering_angle_min)
             self.speed = max(int(self.speed_reduction_to_follow*init_speed),25)
             self.update_line_timeout()   
-            if self.state in ['ready','drive']: self.drive()
+            self.drive()
             if self.state == 'stop':
                 print('sensorCar Ende')
                 break
@@ -263,7 +263,8 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             sign_of_line_lost = int(np.sign(self.__line_lost_counter))
             self.speed = -25
             self.steering_angle = 90 + sign_of_line_lost*45
-            if self.state in ['ready','drive']: self.drive()
+            # if self.state in ['ready','drive']: self.drive()
+            self.drive()
             if self.state == 'stop':
                 print('sensorCar Ende')
                 return
@@ -272,7 +273,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             else:
                 infrared_sensor_selector = 4
             while 1 != self.infrared.read_digital()[infrared_sensor_selector]:
-                print(self.infrared.read_digital())
+                # print(self.infrared.read_digital())
             #while True:
                 pass
             print('Fahrzeug wieder auf Spur')
