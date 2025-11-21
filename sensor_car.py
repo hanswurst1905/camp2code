@@ -237,8 +237,8 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                  self.steering_angle = min(self._steering_angle_max, self.steering_angle+int(min(steering_gradient,relative_steering_adjustment)))
             if relative_steering_adjustment < 0:
                  self.steering_angle = max((self.steering_angle + int(max(-steering_gradient,relative_steering_adjustment))),self._steering_angle_min)
-            self.speed = max(int(self.speed_reduction_to_follow*init_speed),25)
-            self.update_line_timeout()   
+            self.speed = max(min(int(self.speed_reduction_to_follow*init_speed),100),25)
+            #self.update_line_timeout()   
             self.drive()
             # if self.state in ['ready','drive']: self.drive()
             if self.state == 'stop':
@@ -254,25 +254,22 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.steering_angle = steering_angle
         self.old_steering_angle = steering_angle
         self.__line_lost_counter = 0
-
+        self.speed_reduction_to_follow = init_speed
         self.__last_line_seen_timestamp = time.time()
         counter = 0
         while True:
             if self.speed == 0:
                 self.speed = 25
             counter = (counter + 1) % 3  # Zähler bleibt zwischen 0 und 2
-            if counter == 0:    # wird alle 3 Rechenschritte ausgeführt")
-                if (self.speed + 1) < init_speed:
-                    self.speed +=1
-            self.speed = min(self.speed, init_speed)
-            self.steering_angle
-            self.update_line_timeout()
-            self.steering_angle = self.old_steering_angle
+            #if counter == 0:    # wird alle 3 Rechenschritte ausgeführt")
+            #    if (self.speed + 1) < init_speed:
+            #        self.speed +=1
+            #self.speed = min(self.speed, init_speed)
             self.follow_line_2()
+            self.speed = max(min(int(self.speed_reduction_to_follow*init_speed),100),25)
+            self.update_line_timeout()
             self.line_lost_in_direction()
             print(f"line_pos {self.line_pos} steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
-#            time.sleep(1)
-
             if self.steering_angle_to_follow is None:
                 break
             self.steering_angle = self.steering_angle_to_follow
@@ -280,39 +277,43 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             self.drive()
             if not (-2 < self.__line_lost_counter < 2):
                 self.move_back_to_line()
+                
 
     def move_back_to_line(self):
         # Mach etwas wenn self.__line_lost_counter eine Grenze erreicht.
         self.old_speed = self.speed
         self.old_steering_angle = self.steering_angle
         if self.__line_lost_counter < -2:   # linie rechts verloren 
-            self.stop()         # hier nochmal nachdenken ob nicht self.speed = 0 besser wäre
-            self.state = 'drive'
+            self.speed = 0         # hier nochmal nachdenken ob nicht self.speed = 0 besser wäre
+            self.drive()
             while self.__line_lost_counter < 1:
-                self.speed = -30
+                self.speed = -35
                 #self.steering_angle -=1
                 self.steering_angle_back_to_line = self.steering_angle - 5
                 self.steering_angle = max(self.steering_angle_back_to_line,self._steering_angle_min)
+                self.line_pos=self.infrared.read_digital()
                 self.line_lost_in_direction()
                 self.drive()
                 print(f"line_pos {self.line_pos} steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
-            self.stop()
-            self.state = 'drive'
+            self.speed = 0
+            self.drive()
+            self.steering_angle = self.old_steering_angle
             self.__last_line_seen_timestamp = time.time()
         if self.__line_lost_counter > 2:    # linie links verloren
-            self.stop()
-            self.state = 'drive'
+            self.speed = 0 
+            self.drive()
             while self.__line_lost_counter > -1:
-                self.speed = -30
+                self.speed = -35
                 #self.steering_angle +=1
                 self.steering_angle_back_to_line = self.steering_angle + 5
                 self.steering_angle = min(self.steering_angle_back_to_line,self._steering_angle_max)
+                self.line_pos=self.infrared.read_digital()
                 self.line_lost_in_direction()
                 self.drive()
                 print(f"line_pos {self.line_pos} steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
-            self.stop()
-            self.state = 'drive'
-            print("move_back_to_line Beendet")
+            self.speed = 0
+            self.drive()
+            self.steering_angle = self.old_steering_angle
             self.__last_line_seen_timestamp = time.time()
         return (self.old_speed, self.old_steering_angle)
 
