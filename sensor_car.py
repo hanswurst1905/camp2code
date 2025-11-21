@@ -135,7 +135,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.__ground_infrared_reference = [103, 128, 125, 110, 112]
 #        time.sleep(0.1)
         current_infrared_measurement = np.array(self.infrared.read_analog())   # Messwert z.B. [52 54 54 61 52]
-                                                                               # Kalibrierwert z.B. [131 123 145 138 120]
+        self.line_pos = np.where(current_infrared_measurement < self.__calibrated_reference, 1, 0)                                                                       # Kalibrierwert z.B. [131 123 145 138 120]
         distance_to_line_reference = current_infrared_measurement - np.array(self.__calibrated_reference)   # z.B. [-79. -69. -91. -78. -68.]
         min_val = np.min(distance_to_line_reference)           # z.B. -91
         current_time = time.time()
@@ -157,7 +157,6 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         calc_weights=1/(np.abs(distance_to_line_reference) + 0.001)   # z.B. [0.08 0.05 1000. 0.08 0.04]
         calc_weights=calc_weights/np.sum(calc_weights)   # z.B. [0. 0. 1. 0. 0.]
         
-        self.line_pos = calc_weights.round(0).astype(int) 
         # np.set_printoptions(precision=2, suppress=True)
         # print(f"{calc_weights_print} {self.steering_angle_to_follow} {(current_time - self.__last_line_seen_timestamp)*1000}")
         
@@ -197,8 +196,11 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             self.__line_lost_counter = 0
         elif self.__line_lost_counter == 2:
             self.__line_lost_counter += 1
+            print('Rechtskurve verlassen')
         elif self.__line_lost_counter == -2:
             self.__line_lost_counter -= 1
+            print('Linkskurve verlassen')
+        print(self.__line_lost_counter)
 
     def on_line(self):
         '''entscheidet anhand der Werte des Infrarotsensor ob das Fahrzeug auf er Line steht'''            
@@ -222,8 +224,10 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             print("Geschwindigkeit zu niedrig für den Fahrmodus")
             return
         self.speed = init_speed
+        self.speed_reduction_to_follow = init_speed
         self.steering_angle = steering_angle
         self.__last_line_seen_timestamp = time.time()
+        # while self.state == 'drive':
         while True:
             self.follow_line_2()
             if self.steering_angle_to_follow is None:
@@ -237,8 +241,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             self.speed = max(int(self.speed_reduction_to_follow*init_speed),25)
             self.update_line_timeout()   
             self.drive()
-
-    def fahrmodus_6(self, init_speed = 00, steering_angle=90):
+    def fahrmodus_6(self, init_speed = 100, steering_angle=90):
         self.speed = init_speed
         self.old_speed = init_speed
         self.steering_angle = steering_angle
@@ -263,7 +266,6 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             print(f"line_pos {self.line_pos} line_pos_digital {self.line_pos_ditigal}   steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
 #            time.sleep(1)
 
-            self.update_line_timeout()
             if self.steering_angle_to_follow is None:
                 break
             self.steering_angle = self.steering_angle_to_follow
@@ -337,8 +339,10 @@ def main():
     # print(car.infrared.read_digital())
     # print(car.infrared.get_average(mount=3000))
     # #time.sleep(1)
-    # car.stop()
-
+    #car.stop()
+    car.speed=30
+    car.steering_angle=90
+    car.state = 'drive'
     if selection == '1':
         car.fahrmodus_1()
     elif selection == '2':
@@ -353,6 +357,8 @@ def main():
         car.fahrmodus_6()
     elif selection == '7':
         running = False
+    car.stop()
+    car.steering_angle=90
 
 
 if __name__ == "__main__":

@@ -234,7 +234,7 @@ class FrontWheels(object):
         _servo (object): An object of the class Servo with the parameters FRONT_WHEEL_CHANNEL, BUS_NUMBER and _turning_offset
     """
 
-    FRONT_WHEEL_CHANNEL = 0
+    FRONT_WHEEL_CHANNEL = 1
     MAX_TURNING_ANGLE = 45
     BUS_NUMBER = 1
 

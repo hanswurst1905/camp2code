@@ -5,6 +5,7 @@ import dash_bootstrap_components as dbc
 from datalogger import DataLogger
 import plotly.express as px
 from sonic_car import*
+from sensor_car import SensorCar
 import threading
 import os
 import pandas as pd
@@ -21,7 +22,8 @@ class SensorDashboard(DataLogger):
         self.car = car
         # self.log = car.log
         self.logs_path = "logs"
-        self.available_logs = [f for f in os.listdir(self.logs_path) if f.endswith(".log")]
+        # self.available_logs = [f for f in os.listdir(self.logs_path) if f.endswith(".log")]
+        self.available_logs =  []
         # self.is_driving = False  # Fahrstatus
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
         self._setup_layout()
@@ -32,7 +34,7 @@ class SensorDashboard(DataLogger):
         self.speed_max = 0
         self.drive_time = 0
         self.ultrasonic_distance = 0
-        self._thread = None
+        self.drive_thread = None
         self.drive_distance = 0
 
 
@@ -54,6 +56,15 @@ class SensorDashboard(DataLogger):
             self.status_cam = False
             self.cam_thread.join(timeout=1)
             self.cam_thread = None 
+
+    def stop_drive_thread(self):
+        if self.drive_thread is not None:
+            self.drive_thread.join(timeout=1)
+            self.drive_thread = None
+
+    def start_drive_thread(self,mode):
+        self.drive_thread = threading.Thread(target=mode)
+        self.drive_thread.start()
 
     def _cam_worker(self):
         while self.status_cam:
@@ -133,7 +144,7 @@ class SensorDashboard(DataLogger):
                                 dbc.CardHeader("Cam"),
                                 dbc.CardBody([
                                     html.Img(id="live-image"),
-                                    dcc.Interval(id="cam-interval", interval=100, n_intervals=0)
+                                    dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
                                 ])
                             ], color="success", inverse=True, outline=False), width=6),
                     ])
@@ -364,15 +375,16 @@ class SensorDashboard(DataLogger):
                 return "Fahrbereitschaft über Fahren herstellen"
             elif button_id == "btn-drive":
                 self.car.state = 'ready'
-                self.car.drive()
+                # self.car.drive()
                 self.write_log()
                 return "Fahrbereitschaft hergestellt."
             elif button_id == "btn-stop":
-                car.state = 'stop'
+                self.car.state = 'stop'
                 self.car.speed = 0
                 self.car.steering_angle = 90
                 self.car.stop()
                 self.write_log()
+                self.stop_drive_thread()
                 return "Fahrzeug gestoppt."
             elif button_id == "btn-driveMode1":
                 self.car.fahrmodus_1()
@@ -389,7 +401,10 @@ class SensorDashboard(DataLogger):
                 self.car.fahrmodus_4()
             elif button_id == "btn-driveMode5":
                 # self.car.fahrmodus_5()
-                return 'under construction'
+                # self.drive_thread = threading.Thread(target=self.car.fahrmodus_5)
+                # self.drive_thread.start()
+                self.start_drive_thread(self.car.fahrmodus_5)
+                return 'Fahrmodus_5 gestartet'
             elif button_id == "btn-driveMode6":
                 # self.car.fahrmodus_6()
                 return 'under construction'
@@ -476,7 +491,9 @@ class SensorDashboard(DataLogger):
 
 
 if __name__ == "__main__":
-    car = SonicCar()
+    # car = BaseCar()
+    # car = SonicCar()
+    car = SensorCar()
     # log = DataLogger(car)
     dashboard = SensorDashboard(car)
     
