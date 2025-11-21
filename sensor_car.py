@@ -270,7 +270,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             self.steering_angle = self.old_steering_angle
             self.follow_line_2()
             self.line_lost_in_direction()
-            print(f"line_pos {self.line_pos} line_pos_digital {self.line_pos_ditigal}   steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
+            print(f"line_pos {self.line_pos} steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
 #            time.sleep(1)
 
             if self.steering_angle_to_follow is None:
@@ -295,7 +295,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                 self.steering_angle = max(self.steering_angle_back_to_line,self._steering_angle_min)
                 self.line_lost_in_direction()
                 self.drive()
-                #print(f"line_pos {self.line_pos} line_pos_digital {self.line_pos_ditigal}   steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
+                print(f"line_pos {self.line_pos} steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
             self.stop()
             self.state = 'drive'
             self.__last_line_seen_timestamp = time.time()
@@ -309,7 +309,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                 self.steering_angle = min(self.steering_angle_back_to_line,self._steering_angle_max)
                 self.line_lost_in_direction()
                 self.drive()
-                print(f"line_pos {self.line_pos} line_pos_digital {self.line_pos_ditigal}   steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
+                print(f"line_pos {self.line_pos} steering_angle {self.steering_angle} speed {self.speed} line_lost_counter {self.__line_lost_counter}" )
             self.stop()
             self.state = 'drive'
             print("move_back_to_line Beendet")
