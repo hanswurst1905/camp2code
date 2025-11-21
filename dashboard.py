@@ -22,7 +22,6 @@ class SensorDashboard(DataLogger):
         self.car = car
         # self.log = car.log
         self.logs_path = "logs"
-        # self.available_logs = [f for f in os.listdir(self.logs_path) if f.endswith(".log")]
         self.available_logs =  []
         # self.is_driving = False  # Fahrstatus
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -291,11 +290,9 @@ class SensorDashboard(DataLogger):
                 self.speed_max = self.car.logs["speed"].max()
                 speed=self.car.speed
                 
-
             self.state = self.car.state
             self.ultrasonic_distance=self.car.get_safe_distance()
-            if self.ultrasonic_distance < self.car.speed / 2:
-                self.car.speed = 0
+
             return(
                 html.Div(
                     f"IST:\t\t{speed:.0f} km/h\n\n"
@@ -326,12 +323,7 @@ class SensorDashboard(DataLogger):
         def update_values(speed, angle):
             self.car.speed = speed
             self.car.steering_angle = angle
-            if car.state in ['ready','drive']:
-                self.car.drive()
-                pass
-            if self.car.state == 'drive':
-                # self.log.write_log()
-                pass
+            self.car.drive()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
         @self.app.callback(
@@ -407,7 +399,8 @@ class SensorDashboard(DataLogger):
                 return 'Fahrmodus_5 gestartet'
             elif button_id == "btn-driveMode6":
                 # self.car.fahrmodus_6()
-                return 'under construction'
+                self.start_drive_thread(self.car.fahrmodus_6)
+                return 'Fahrmodus_6 gestartet'
             elif button_id == "btn-driveMode7":
                 # self.car.fahrmodus_7()
                 return 'under construction'

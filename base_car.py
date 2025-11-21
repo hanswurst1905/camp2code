@@ -203,7 +203,7 @@ class BaseCar():
         leitet die Fahrbefehle an basisklassen weiter,
         dazu können BaseCar().speed und BaseCar().steering_angle beschrieben werden
         '''
-        if self.state is not 'stop':
+        if self.state in ['ready','drive']:
             self.state = 'drive'
             if self.__steering_angle_last != self.steering_angle:
                 self.__steering_angle_last = self.steering_angle
