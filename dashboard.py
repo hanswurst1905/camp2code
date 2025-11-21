@@ -479,7 +479,7 @@ class SensorDashboard(DataLogger):
             return [{"label": fname, "value": fname} for fname in self.available_logs]
         
     def run(self):
-        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
+        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=False, use_reloader=False) #lokale IP Adresse
         
 
 
