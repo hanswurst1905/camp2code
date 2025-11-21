@@ -183,15 +183,15 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         '''Rückmeldung ob die Line links oder rechts aus der Messleiste am Fahrzeug rausgewandert ist'''
         if np.all(self.line_pos == 0) and -2 < abs(self.__line_lost_counter) < 2:
             pass
-        elif self.self.line_pos[1] == 1:
+        elif self.line_pos[1] == 1:
             self.__line_lost_counter = 1
-        elif self.self.line_pos[0] == 1:         # linie ganz links
+        elif self.line_pos[0] == 1:         # linie ganz links
             self.__line_lost_counter = 2
-        elif self.self.line_pos[3] == 1:
+        elif self.line_pos[3] == 1:
             self.__line_lost_counter = -1
-        elif self.self.line_pos[4] == 1:         # linie ganz rechts
+        elif self.line_pos[4] == 1:         # linie ganz rechts
             self.__line_lost_counter = -2
-        elif self.self.line_pos[2] == 1:
+        elif self.line_pos[2] == 1:
             self.__line_lost_counter = 0
         elif self.__line_lost_counter == 2:
             self.__line_lost_counter += 1
@@ -245,7 +245,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                 print('sensorCar Ende')
                 break
 
-    def fahrmodus_6(self, init_speed = 25, steering_angle=90):
+    def fahrmodus_6(self, init_speed = 100, steering_angle=90):
         if init_speed < 25:
             print("Geschwindigkeit zu niedrig für den Fahrmodus")
             return
@@ -286,7 +286,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.old_speed = self.speed
         self.old_steering_angle = self.steering_angle
         if self.__line_lost_counter < -2:   # linie rechts verloren 
-            self.stop()
+            self.stop()         # hier nochmal nachdenken ob nicht self.speed = 0 besser wäre
             self.state = 'drive'
             while self.__line_lost_counter < 1:
                 self.speed = -30
