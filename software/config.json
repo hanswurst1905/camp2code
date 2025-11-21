@@ -14,11 +14,11 @@
     "10000000a3b691e7": {
         "forward_A": 0,
         "forward_B": 0,
-        "infrared_calibrated_reference_0": 84.5,
-        "infrared_calibrated_reference_1": 78.0,
-        "infrared_calibrated_reference_2": 92.0,
-        "infrared_calibrated_reference_3": 88.0,
-        "infrared_calibrated_reference_4": 73.0,
+        "infrared_calibrated_reference_0": 79.0,
+        "infrared_calibrated_reference_1": 79.5,
+        "infrared_calibrated_reference_2": 92.5,
+        "infrared_calibrated_reference_3": 86.5,
+        "infrared_calibrated_reference_4": 75.5,
         "min_wheel_speed": 20,
         "turning_offset": 5
     },
