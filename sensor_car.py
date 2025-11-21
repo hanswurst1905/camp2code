@@ -257,7 +257,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.speed_reduction_to_follow = init_speed
         self.__last_line_seen_timestamp = time.time()
         counter = 0
-        while True:
+        while self.state == 'drive' or self.state == 'ready':
             if self.speed == 0:
                 self.speed = 25
             counter = (counter + 1) % 3  # Zähler bleibt zwischen 0 und 2
@@ -286,7 +286,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         if self.__line_lost_counter < -2:   # linie rechts verloren 
             self.speed = 0         # hier nochmal nachdenken ob nicht self.speed = 0 besser wäre
             self.drive()
-            while self.__line_lost_counter < 1:
+            while self.__line_lost_counter < 1 and (self.state == 'drive' or self.state == 'ready'):
                 self.speed = -35
                 #self.steering_angle -=1
                 self.steering_angle_back_to_line = self.steering_angle - 5
@@ -302,7 +302,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         if self.__line_lost_counter > 2:    # linie links verloren
             self.speed = 0 
             self.drive()
-            while self.__line_lost_counter > -1:
+            while self.__line_lost_counter > -1 and (self.state == 'drive' or self.state == 'ready'):
                 self.speed = -35
                 #self.steering_angle +=1
                 self.steering_angle_back_to_line = self.steering_angle + 5
