@@ -7,6 +7,7 @@ import pandas as pd
 import re
 from pathlib import Path
 import numpy as np
+import warnings
 
 class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
     def __init__(self):
@@ -24,6 +25,11 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.__line_lost_counter = 0
 
     def read_infrared_calibration_from_config(self) -> list:
+        """ 
+        Liest die ./software/config.json aus und sucht nach der Raspberry Pi Seriennummer inkl. Kalibierwerten.
+        Falls der Raspberry PI nicht bekannt ist oder die Referenzwerte für den Infrarot-Sensor fehlen, wird eine Kalibrierung gestartet.
+        Bei erfolgreichem Durchlauf wird, die config.json neu geschrieben.
+        """
         with open('./software/config.json') as f:
             try:
                 config_file = json.load(f)
@@ -52,6 +58,11 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         return infrared_reference
 
     def calibrate_infrared(self) -> list:
+        """
+        Kalibrierung wird gestartet und Nutzer wird per Terminal durch die Kalibrierung geführt.
+        Schritte:
+        Untergrund auswerten -> Linie auswerten -> Neustart bis der Nutzer mit der Poti-Stellung zu frieden ist.
+        """
         print("======================================== Starte Kalibrierung der Infratorsensoren ========================================\n")
         print("Ermitellung von optimaler Poti position. Bitte PiCar auf den Boden stellen und eine schwarze Linie kleben.")
         print("Bitte die Schritte im Terminal mit einem Enter bestätigen um fortzufahren. Abbruch: a. Kalibrierung übernehmen: j")
@@ -70,7 +81,12 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             print(*diff, sep='\t')
             print(f"mittlerer Hell-Dunkel-Differenz {np.mean(diff)}")
 
-    def calibrate_infrared_single(self) -> list:
+    def calibrate_infrared_single(self) -> None:
+        """
+        Kalibrierung wird gestartet und Nutzer wird per Terminal durch die Kalibrierung geführt.
+        Schritte:
+        Untergrund auswerten -> Linie je Sensor einzeln auswerten -> Neustart bis der Nutzer mit der Poti-Stellung zu frieden ist.
+        """
         print("======================================== Starte Kalibrierung der Infratorsensoren ========================================\n")
         print("Ermitellung von optimaler Poti position. Bitte PiCar auf den Boden stellen und eine schwarze Linie kleben.")
         print("Bitte die Schritte im Terminal mit einem Enter bestätigen um fortzufahren. Abbruch: a. Kalibrierung übernehmen: j")
@@ -92,7 +108,12 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
             print(f"mittlerer Hell-Dunkel-Differenz {np.mean(diff)}")
 
     def follow_line(self):
-        '''Anhand der Position der Linie wird der Lenkwinkel, sowie Reduktion der Geschwindigkeit zurück gegeben'''
+        '''
+        ACHTUNG: Deprecated bitte follow_line_2 verwenden
+        Anhand der Position der Linie wird der Lenkwinkel, sowie Reduktion der Geschwindigkeit zurück gegeben
+        
+        '''
+        warnings.warn("Methode follow_line() veraltet und nicht in Betrieb genommen. Bitte follow_line_2 verwenden.", category=DeprecationWarning,stacklevel=2)
         self.__line_posible_positions = [
                     [0, 0, 0, 0, 0, None, None],
                     [1, 0, 0, 0, 0, 45, 0.75],
@@ -130,6 +151,20 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         print(self.speed_reduction_to_follow)
 
     def follow_line_2(self):
+        '''
+        Es wird eine Geschwindigkeits- und Lenkwinkelvorgabe errechnet. Als Basis dienen dabei die Analogen Infrarot-Werte.
+        Von diesen werden die Referenzwerte aus der config.json abgezogen um additive Produktionstoleranzen zu enterfen.
+        Falls ein Sensor auf der Linie steht, wird die Differenz negativ.
+        Im Anschluss werden alle Differenzen mit der formel 1/(abs(x)+0.001) gewichtet. Negative Werte werden auf 0 gesetzt.
+        Daraus wird eine Gewichtung errechnet welche auf einen Lenkwinkel- und Geschwindigkeits-Lookup angewandt wird.
+        Aktuell ist kein Linienschätzer implementiert, deswegen wird der Lenkwinkel mit jedem Rechenschritt um 1 erhöht, damit
+        die Linie wieder gefunden wird.
+        Falls innerhalb von self.__max_line_timeout keine Linie gefunden wurde, wird der Solllenkwinkel auf Null gesetzt und das Fahrzeug angehalten.
+        Relevanten geschriebenen Variablen für die Gesamtklasse:
+        self.steering_angle_to_follow := Solllenkwinkel
+        self.speed_reduction_to_follow := relative Sollgeschwindigkeit als float [0:1]
+        self.line_pos := trägt hier die zuletzt aufgenommenen digitalen Infrarotwerte ein
+        '''
         self.__speed_coefficient = np.array([0.5, 0.75, 1, 0.75, 0.5])
         self.__target_control_angle = np.array([45, 70, 90, 110, 135])
         self.__ground_infrared_reference = [103, 128, 125, 110, 112]
@@ -164,11 +199,15 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         self.speed_reduction_to_follow = np.sum(calc_weights*self.__speed_coefficient)
 
     def update_line_timeout(self):
-        '''Kennlinie zur Reduktion des Timeouts auf Basis der Geschwindigkeit 25% = 0.5s und 100% = 0.05s'''
+        '''Kennlinie zur Reduktion des Timeouts (self.__max_line_timeout) auf Basis der Geschwindigkeit 25% = 0.5s und 100% = 0.05s'''
         self.__max_line_timeout=0.5+0.35/75*(25-float(self.speed))
 
     def line_end(self):
-        '''stopt das Fahrzeug am Ende der Linie'''
+        '''
+        ACHTUNG: Methode nicht in Betriebgenommen und in follow_line_2 enthalten.
+        stopt das Fahrzeug am Ende der Linie
+        '''
+        warnings.warn("Methode line_end() veraltet und nicht in Betrieb genommen. Linienerkennung ist in follow_line_2 bereits umgesetzt.", category=DeprecationWarning,stacklevel=2)
         # wenn aktueller Messwert = 00000 und der letzte Messwert weder 10000 noch 00001 war kann die linie nicht zur Seite rausgelaufen sein
         if self.line_pos[0] == [0,0,0,0,0] and (self.line_pos[1] != self.__line_pos_left or self.line_pos[1] != self.__line_pos_right):
             print("Verdacht Linie zu Ende")
@@ -180,7 +219,14 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         return False
 
     def line_lost_in_direction(self):
-        '''Rückmeldung ob die Line links oder rechts aus der Messleiste am Fahrzeug rausgewandert ist'''
+        '''
+        Rückmeldung ob die Line links oder rechts aus der Messleiste am Fahrzeug rausgewandert ist.
+        Dabei werden die Zustandsänderungen der binären Infrarotsernsorwerte überwacht und in self.__line_lost_counter gespeichert.
+        0 := Linie in der mitte
+        1 := Linie in der mitte links
+        2 := Linie links
+        3 := Linie war links und wurde verlorern
+        '''
         if np.all(self.line_pos == 0) and -2 < abs(self.__line_lost_counter) < 2:
             pass
         elif self.line_pos[1] == 1:
@@ -209,6 +255,7 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
         direction           [left   right-left  midle   right-midle right   ]
         Steering            [45°    67,5°       90°     112,5°      135°    ]
         '''
+        warnings.warn("Methode on_line() veraltet und nicht in Betrieb genommen.", category=DeprecationWarning,stacklevel=2)
         irs = self.infrared.read_digital()
         if (irs[0] and irs[4] == 0) and (irs[1] or irs[2] or irs[3] == 1):
             print ("fzg on_line")
@@ -219,6 +266,10 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
 
 
     def fahrmodus_5(self, init_speed = 40, steering_angle=90):
+        '''
+        Versucht die Linie zu halten und passt dynamisch Geschwindigkeit und Lenkwinkel auf Basis der follow_line_2-Methode an.
+        Bricht ab, falls self.__max_line_timeout überschritten wird := Linien Ende erreicht. 
+        '''
         if init_speed < 25:
             print("Geschwindigkeit zu niedrig für den Fahrmodus")
             return
@@ -246,6 +297,9 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                 break
 
     def fahrmodus_6(self, init_speed = 100, steering_angle=90):
+        """
+        Analog zu Fahrmodus_5 jedoch ist die line_lost Überwachung mit enthalten. Falls das Fahrzeug aus der Kurve ausbricht, wird die Methode move_back_to_line ausgeführt.
+        """
         if init_speed < 25:
             print("Geschwindigkeit zu niedrig für den Fahrmodus")
             return
@@ -284,6 +338,11 @@ class SensorCar(SonicCar): # Beschreibt die Klasse "SensorCar"
                 
 
     def move_back_to_line(self):
+        '''
+        Stoppe Fahrzeug und rangiere langsam rückwärts bis der Sensor auf der Gegenseite die Linie findet.
+        Linie links verloren => Rangiere mit maximalen Lenkeinschlag bis der Infrarot-Sensor mitte rechts auslöst und stelle lenkwinkel zurück auf die Kurvenfahrt.
+        self.__last_line_seen_timestamp wird aktualisiert, sobald eine Linie erkannt wird.
+        '''
         # Mach etwas wenn self.__line_lost_counter eine Grenze erreicht.
         self.old_speed = self.speed
         self.old_steering_angle = self.steering_angle

@@ -47,7 +47,7 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
 
     def calc_approach_speed(self, distance) -> None:
         """
-            Geschwindigkeit beim Annähern an ein Hindernis reduzieren
+            Geschwindigkeit beim Annähern an ein Hindernis reduzieren.
             50 cm Abstand entspricht 100% Speed und 10cm 20%
         """
         if self.direction < 0 or self.speed < 0:
@@ -71,6 +71,9 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
 #         self.__user_defined_speed = value # neu hinzugefügtes Attribut
 
     def fahrmodus_3(self, init_speed = 35, steering_angle=90):
+        '''
+        PiCar nähert sich an ein Hindernis und bleibt stehen.
+        '''
         self.__user_defined_speed = init_speed
         self.speed = init_speed
         self.steering_angle = steering_angle
@@ -87,6 +90,9 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
     def fahrmodus_4(self, init_speed = 35, steering_angle = 90):
+        """
+        PiCar fährt im leereen Raum und versucht Hindernisse zu umfahren. 
+        """
         while True:
             self.fahrmodus_3(init_speed,steering_angle)
             self.steering_angle = 45
