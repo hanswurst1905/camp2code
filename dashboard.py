@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from datalogger import DataLogger
 import plotly.express as px
 from sonic_car import*
-from sensor_car import SensorCar
+# from sensor_car import SensorCar
 from cam_car import CamCar
 import threading
 import os

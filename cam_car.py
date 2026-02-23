@@ -1,5 +1,7 @@
 from software.basisklassen_cam import*
 from sensor_car import*
+import cv2
+import numpy as np
 
 class CamCar(SensorCar):
     def __init__(self):
@@ -7,4 +9,7 @@ class CamCar(SensorCar):
         self.camera = Camera()
 
     def get_image(self):
-        return self.camera.get_frame()
+        img = self.camera.get_frame()
+        img_hsv = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        return img_hsv
+        # return self.camera.get_frame()
