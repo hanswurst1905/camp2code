@@ -5,7 +5,8 @@ import dash_bootstrap_components as dbc
 from datalogger import DataLogger
 import plotly.express as px
 from sonic_car import*
-from sensor_car import SensorCar
+# from sensor_car import SensorCar
+from cam_car import CamCar
 import threading
 import os
 import pandas as pd
@@ -67,10 +68,9 @@ class SensorDashboard(DataLogger):
 
     def _cam_worker(self):
         while self.status_cam:
-            ret, frame = self.cap.read()
-            frame = cv2.rotate(frame, cv2.ROTATE_180)
-            _, buffer = cv2.imencode('.jpg', frame)
-            self.latest_frame = base64.b64encode(buffer).decode()
+            frame = self.car.get_image()
+            _, buffer = cv2.imencode(".jpg", frame) 
+            self.latest_frame = base64.b64encode(buffer).decode("utf-8") 
             time.sleep(0.05)
 
     def _setup_layout(self):
@@ -467,6 +467,7 @@ class SensorDashboard(DataLogger):
         def update_image(n):
             if self.status_cam == True:
                 return "data:image/jpeg;base64," + self.latest_frame
+                
             else:
                 return "assets/no_cam.jpg"
 
@@ -486,7 +487,7 @@ class SensorDashboard(DataLogger):
 if __name__ == "__main__":
     # car = BaseCar()
     # car = SonicCar()
-    car = SensorCar()
+    car = CamCar()
     # log = DataLogger(car)
     dashboard = SensorDashboard(car)
     
