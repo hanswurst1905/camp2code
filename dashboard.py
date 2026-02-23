@@ -38,6 +38,7 @@ class SensorDashboard(DataLogger):
         self.drive_distance = 0
         self.hue_l = 0
         self.hue_u = 255
+        self.snipp_l = 0
 
     def get_log(self):
         base_log = super().get_log()
@@ -70,10 +71,11 @@ class SensorDashboard(DataLogger):
     def _cam_worker(self):
         while self.status_cam:
             # frame = self.car.get_image()
-            frame = self.car.filtered_image(self.hue_l, self.hue_u)
-            _, buffer = cv2.imencode(".jpg", frame) 
-            self.latest_frame = base64.b64encode(buffer).decode("utf-8") 
-            time.sleep(0.05)
+            frame = self.car.filtered_image(self.hue_l, self.hue_u, self.snipp_l)
+            if frame is not None:
+                _, buffer = cv2.imencode(".jpg", frame) 
+                self.latest_frame = base64.b64encode(buffer).decode("utf-8") 
+                time.sleep(0.05)
 
     def _setup_layout(self):
         self.app.layout = dbc.Container([
@@ -150,7 +152,7 @@ class SensorDashboard(DataLogger):
                                         dcc.Slider( 
                                             id="slider-hue_lower",
                                             min=0, max=255, step=1, value=50, 
-                                            marks={0: "0", 50: "50", 100: "100"} 
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
                                             ), 
                                             html.Br(),
 
@@ -158,7 +160,15 @@ class SensorDashboard(DataLogger):
                                         dcc.Slider( 
                                             id="slider-hue_upper", 
                                             min=0, max=255, step=1, value=50, 
-                                            marks={0: "0", 50: "50", 100: "100"} 
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
+                                            ), 
+                                            html.Br(),
+
+                                        html.Label("Snipp lower"), 
+                                        dcc.Slider( 
+                                            id="slider-snipp_lower", 
+                                            min=0, max=1, step=0.02, value=50, 
+                                            marks={0: "0", 0.5: "0.5", "1": "1"} 
                                             ), 
                                             html.Br(), ]),
 
@@ -340,13 +350,15 @@ class SensorDashboard(DataLogger):
             Input("speed-slider", "value"),
             Input("angle-slider", "value"),
             Input("slider-hue_lower","value"),
-            Input("slider-hue_upper", "value")
+            Input("slider-hue_upper", "value"),
+            Input("slider-snipp_lower", "value")
         )
-        def update_values(speed, angle, hue_l, hue_u):
+        def update_values(speed, angle, hue_l, hue_u, snipp_l):
             self.car.speed = speed
             self.car.steering_angle = angle
             self.hue_l = hue_l
             self.hue_u = hue_u
+            self.snipp_l = snipp_l
             self.car.drive()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
