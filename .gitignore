@@ -209,4 +209,4 @@ __marimo__/
 # Temp Dateien zum Testen
 temp_*
 software/config.json
-/private
+privat/
