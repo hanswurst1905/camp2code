@@ -20,7 +20,7 @@ class CamCar(SensorCar):
         img_flt = cv2.inRange(img, lower_range, upper_range)
         img_flt = cv2.GaussianBlur(img_flt,(5,5),0)
         h,w = img_flt.shape
-        img_flt_cropped = img_flt[int(s_l*h):,:]
+        img_flt_cropped = img_flt[:h - int(s_l*h),:]
         return img_flt_cropped
 
     
