@@ -14,4 +14,10 @@ class CamCar(SensorCar):
         return img_hsv
         # return self.camera.get_frame()
 
+    def filtered_image(self, l, u):
+        lower_range, upper_range = np.array([l,0,0]), np.array([u,255,255])
+        img = self.get_image()
+        img_flt = cv2.inRange(img, lower_range, upper_range)
+        return img_flt
+
     

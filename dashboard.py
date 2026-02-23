@@ -36,7 +36,8 @@ class SensorDashboard(DataLogger):
         self.ultrasonic_distance = 0
         self.drive_thread = None
         self.drive_distance = 0
-
+        self.hue_l = 0
+        self.hue_u = 255
 
     def get_log(self):
         base_log = super().get_log()
@@ -68,7 +69,8 @@ class SensorDashboard(DataLogger):
 
     def _cam_worker(self):
         while self.status_cam:
-            frame = self.car.get_image()
+            # frame = self.car.get_image()
+            frame = self.car.filtered_image(self.hue_l, self.hue_u)
             _, buffer = cv2.imencode(".jpg", frame) 
             self.latest_frame = base64.b64encode(buffer).decode("utf-8") 
             time.sleep(0.05)
@@ -142,6 +144,24 @@ class SensorDashboard(DataLogger):
                             dbc.Card([
                                 dbc.CardHeader("Cam"),
                                 dbc.CardBody([
+
+                                    html.Div([ 
+                                        html.Label("Hue lower"), 
+                                        dcc.Slider( 
+                                            id="slider-hue_lower",
+                                            min=0, max=255, step=1, value=50, 
+                                            marks={0: "0", 50: "50", 100: "100"} 
+                                            ), 
+                                            html.Br(),
+
+                                        html.Label("Hue upper"), 
+                                        dcc.Slider( 
+                                            id="slider-hue_upper", 
+                                            min=0, max=255, step=1, value=50, 
+                                            marks={0: "0", 50: "50", 100: "100"} 
+                                            ), 
+                                            html.Br(), ]),
+
                                     html.Img(id="live-image"),
                                     dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
                                 ])
@@ -318,11 +338,15 @@ class SensorDashboard(DataLogger):
             Output("speed-display", "children"),
             Output("angle-display", "children"),
             Input("speed-slider", "value"),
-            Input("angle-slider", "value")
+            Input("angle-slider", "value"),
+            Input("slider-hue_lower","value"),
+            Input("slider-hue_upper", "value")
         )
-        def update_values(speed, angle):
+        def update_values(speed, angle, hue_l, hue_u):
             self.car.speed = speed
             self.car.steering_angle = angle
+            self.hue_l = hue_l
+            self.hue_u = hue_u
             self.car.drive()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
