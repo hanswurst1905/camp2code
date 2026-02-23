@@ -10,6 +10,8 @@ class CamCar(SensorCar):
 
     def get_image(self):
         img = self.camera.get_frame()
-        img_hsv = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        img_hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
         return img_hsv
         # return self.camera.get_frame()
+
+    
