@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module sensor_car</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>sensor_car</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/pi/Desktop/team3/camp2code/sensor_car.py">/home/pi/Desktop/team3/camp2code/sensor_car.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="RPi.GPIO.html">RPi.GPIO</a><br>
+<a href="click.html">click</a><br>
+<a href="json.html">json</a><br>
+</td><td width="25%" valign=top><a href="math.html">math</a><br>
+<a href="numpy.html">numpy</a><br>
+<a href="pandas.html">pandas</a><br>
+</td><td width="25%" valign=top><a href="re.html">re</a><br>
+<a href="SMBus.html">SMBus</a><br>
+<a href="sys.html">sys</a><br>
+</td><td width="25%" valign=top><a href="time.html">time</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="sonic_car.html#SonicCar">sonic_car.SonicCar</a>(<a href="base_car.html#BaseCar">base_car.BaseCar</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="sensor_car.html#SensorCar">SensorCar</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="SensorCar">class <strong>SensorCar</strong></a>(<a href="sonic_car.html#SonicCar">sonic_car.SonicCar</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>BaseCar&nbsp;Class<br>
+Methode&nbsp;drive&nbsp;und&nbsp;stop<br>
+Setter&nbsp;und&nbsp;Getter&nbsp;für&nbsp;Geschwindigkeit&nbsp;und&nbsp;Lenkwinkel<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="sensor_car.html#SensorCar">SensorCar</a></dd>
+<dd><a href="sonic_car.html#SonicCar">sonic_car.SonicCar</a></dd>
+<dd><a href="base_car.html#BaseCar">base_car.BaseCar</a></dd>
+<dd><a href="builtins.html#object">builtins.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="SensorCar-__init__"><strong>__init__</strong></a>(self)</dt><dd><tt>Initialize&nbsp;self.&nbsp;&nbsp;See&nbsp;help(type(self))&nbsp;for&nbsp;accurate&nbsp;signature.</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-calibrate_infrared"><strong>calibrate_infrared</strong></a>(self) -&gt; list</dt></dl>
+
+<dl><dt><a name="SensorCar-calibrate_infrared_single"><strong>calibrate_infrared_single</strong></a>(self) -&gt; list</dt></dl>
+
+<dl><dt><a name="SensorCar-fahrmodus_5"><strong>fahrmodus_5</strong></a>(self, init_speed=40, steering_angle=90)</dt></dl>
+
+<dl><dt><a name="SensorCar-fahrmodus_6"><strong>fahrmodus_6</strong></a>(self, init_speed=100, steering_angle=90)</dt></dl>
+
+<dl><dt><a name="SensorCar-follow_line"><strong>follow_line</strong></a>(self)</dt><dd><tt>Anhand&nbsp;der&nbsp;Position&nbsp;der&nbsp;Linie&nbsp;wird&nbsp;der&nbsp;Lenkwinkel,&nbsp;sowie&nbsp;Reduktion&nbsp;der&nbsp;Geschwindigkeit&nbsp;zurück&nbsp;gegeben</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-follow_line_2"><strong>follow_line_2</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SensorCar-geraden_gleichung"><strong>geraden_gleichung</strong></a>(self, startwert, zielwert, start_input, end_input, inp)</dt></dl>
+
+<dl><dt><a name="SensorCar-line_end"><strong>line_end</strong></a>(self)</dt><dd><tt>stopt&nbsp;das&nbsp;Fahrzeug&nbsp;am&nbsp;Ende&nbsp;der&nbsp;Linie</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-line_lost_in_direction"><strong>line_lost_in_direction</strong></a>(self)</dt><dd><tt>Rückmeldung&nbsp;ob&nbsp;die&nbsp;Line&nbsp;links&nbsp;oder&nbsp;rechts&nbsp;aus&nbsp;der&nbsp;Messleiste&nbsp;am&nbsp;Fahrzeug&nbsp;rausgewandert&nbsp;ist</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-move_back_to_line"><strong>move_back_to_line</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SensorCar-on_line"><strong>on_line</strong></a>(self)</dt><dd><tt>entscheidet&nbsp;anhand&nbsp;der&nbsp;Werte&nbsp;des&nbsp;Infrarotsensor&nbsp;ob&nbsp;das&nbsp;Fahrzeug&nbsp;auf&nbsp;er&nbsp;Line&nbsp;steht</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-read_infrared_calibration_from_config"><strong>read_infrared_calibration_from_config</strong></a>(self) -&gt; list</dt></dl>
+
+<dl><dt><a name="SensorCar-update_line_timeout"><strong>update_line_timeout</strong></a>(self)</dt><dd><tt>Kennlinie&nbsp;zur&nbsp;Reduktion&nbsp;des&nbsp;Timeouts&nbsp;auf&nbsp;Basis&nbsp;der&nbsp;Geschwindigkeit&nbsp;25%&nbsp;=&nbsp;0.5s&nbsp;und&nbsp;100%&nbsp;=&nbsp;0.05s</tt></dd></dl>
+
+<hr>
+Methods inherited from <a href="sonic_car.html#SonicCar">sonic_car.SonicCar</a>:<br>
+<dl><dt><a name="SensorCar-calc_approach_speed"><strong>calc_approach_speed</strong></a>(self, distance) -&gt; None</dt><dd><tt>Geschwindigkeit&nbsp;beim&nbsp;Annähern&nbsp;an&nbsp;ein&nbsp;Hindernis&nbsp;reduzieren<br>
+50&nbsp;cm&nbsp;Abstand&nbsp;entspricht&nbsp;100%&nbsp;Speed&nbsp;und&nbsp;10cm&nbsp;20%</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-fahrmodus_3"><strong>fahrmodus_3</strong></a>(self, init_speed=35, steering_angle=90)</dt></dl>
+
+<dl><dt><a name="SensorCar-fahrmodus_4"><strong>fahrmodus_4</strong></a>(self, init_speed=35, steering_angle=90)</dt></dl>
+
+<dl><dt><a name="SensorCar-get_distance"><strong>get_distance</strong></a>(self) -&gt; int</dt><dd><tt>Verwendet&nbsp;die&nbsp;initialisierte&nbsp;Klasse&nbsp;"Ultrasonic"&nbsp;um&nbsp;eine&nbsp;Distance&nbsp;in&nbsp;cm&nbsp;zu&nbsp;ermitteln.<br>
+Bei&nbsp;Sensorfehler&nbsp;"-3:&nbsp;Negative&nbsp;distance"&nbsp;wird&nbsp;ein&nbsp;Exception&nbsp;geschmissen.<br>
+Restliche&nbsp;Sensorfehler&nbsp;werden&nbsp;durch&nbsp;den&nbsp;zuletzt&nbsp;bekannten&nbsp;Wert&nbsp;ersetzt&nbsp;oder&nbsp;bei&nbsp;fehlender&nbsp;Historie&nbsp;durch&nbsp;400&nbsp;cm.</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-get_safe_distance"><strong>get_safe_distance</strong></a>(self) -&gt; int</dt><dd><tt>Führt&nbsp;get_distance&nbsp;aus&nbsp;und&nbsp;stopt&nbsp;Fahrzeug&nbsp;bei&nbsp;einer&nbsp;exception</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-stop"><strong>stop</strong></a>(self)</dt><dd><tt>führt&nbsp;neben&nbsp;dem&nbsp;stop&nbsp;von&nbsp;base_car&nbsp;auch&nbsp;den&nbsp;stop&nbsp;des&nbsp;Sonic&nbsp;Sensor&nbsp;aus</tt></dd></dl>
+
+<hr>
+Methods inherited from <a href="base_car.html#BaseCar">base_car.BaseCar</a>:<br>
+<dl><dt><a name="SensorCar-drive"><strong>drive</strong></a>(self)</dt><dd><tt>leitet&nbsp;die&nbsp;Fahrbefehle&nbsp;an&nbsp;basisklassen&nbsp;weiter,<br>
+dazu&nbsp;können&nbsp;BaseCar().speed&nbsp;und&nbsp;BaseCar().steering_angle&nbsp;beschrieben&nbsp;werden</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-fahrmodus"><strong>fahrmodus</strong></a>(self, selection)</dt><dd><tt>Ablaufsteuerung&nbsp;für&nbsp;die&nbsp;gewählten&nbsp;Fahrmodi</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-fahrmodus_1"><strong>fahrmodus_1</strong></a>(self)</dt><dd><tt>führt&nbsp;fahrmodus_1&nbsp;aus</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-fahrmodus_2"><strong>fahrmodus_2</strong></a>(self)</dt><dd><tt>führt&nbsp;fahrmodus_2&nbsp;aus</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-read_config_json"><strong>read_config_json</strong></a>(self) -&gt; None</dt><dd><tt>reads&nbsp;serial&nbsp;number&nbsp;of&nbsp;raspberry&nbsp;pi&nbsp;and&nbsp;imports&nbsp;the&nbsp;corresponding&nbsp;setting.&nbsp;Starts&nbsp;calibration&nbsp;cycle&nbsp;if&nbsp;PiCar&nbsp;is&nbsp;unkown.</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-save_logs"><strong>save_logs</strong></a>(self)</dt><dd><tt>speichert&nbsp;den&nbsp;dataframe&nbsp;als&nbsp;csv&nbsp;Datei&nbsp;in&nbsp;./logs</tt></dd></dl>
+
+<dl><dt><a name="SensorCar-start_calibration"><strong>start_calibration</strong></a>(self, serial_number)</dt></dl>
+
+<hr>
+Data descriptors inherited from <a href="base_car.html#BaseCar">base_car.BaseCar</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>direction</strong></dt>
+<dd><tt>Return:&nbsp;direction&nbsp;(Fahrtrichtung)</tt></dd>
+</dl>
+<dl><dt><strong>speed</strong></dt>
+<dd><tt>Return:&nbsp;speed</tt></dd>
+</dl>
+<dl><dt><strong>state</strong></dt>
+<dd><tt>Return:&nbsp;state&nbsp;(Fahrzustand)</tt></dd>
+</dl>
+<dl><dt><strong>steering_angle</strong></dt>
+<dd><tt>Return:&nbsp;steering_angle</tt></dd>
+</dl>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-main"><strong>main</strong></a>()</dt></dl>
+ <dl><dt><a name="-menue"><strong>menue</strong></a>()</dt></dl>
+</td></tr></table>
+</body></html>
