@@ -193,10 +193,11 @@ class BaseCar():
                 with open('./software/config.json','w') as f:
                     json.dump(config_file, f, sort_keys=True, indent=4)
             else:
-                return
+                return config_file
 
         self.__turning_offset=config_file[serial_number]["turning_offset"]
         self.__min_wheel_speed=config_file[serial_number]["min_wheel_speed"]
+        return config_file
 
     def drive(self):
         '''
