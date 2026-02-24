@@ -174,7 +174,7 @@ class BaseCar():
         return new_config
 
 
-    def read_config_json(self) -> None:
+    def read_config_json(self) -> dict:
         '''
         reads serial number of raspberry pi and imports the corresponding setting. Starts calibration cycle if PiCar is unkown.
         '''
