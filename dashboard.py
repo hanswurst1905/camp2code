@@ -18,6 +18,7 @@ class SensorDashboard(DataLogger):
         super().__init__(car)
         self.cap = cv2.VideoCapture(0)
         self.status_cam = False
+        self.status_fil = False
         self.cam_thread = None
         self.latest_frame = None
         self.car = car
@@ -75,8 +76,10 @@ class SensorDashboard(DataLogger):
 
     def _cam_worker(self):
         while self.status_cam:
-            # frame = self.car.get_image()
-            frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
+            if self.status_fil == False:
+               frame = self.car.get_image()
+            elif self.status_fil == True:
+               frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
             if frame is not None:
                 _, buffer = cv2.imencode(".jpg", frame) 
                 self.latest_frame = base64.b64encode(buffer).decode("utf-8") 
@@ -136,6 +139,7 @@ class SensorDashboard(DataLogger):
                         dbc.Col(dbc.Button("Fahrmodus_6", id="btn-driveMode6", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Fahrmodus_7", id="btn-driveMode7", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Kamerabild", id="btn-cam", color="warning", className="title"), width=2),
+                        dbc.Col(dbc.Button("Kamerafilter", id="btn-fil", color="warning", className="title"), width=2),
                 ]),
 
                 html.Div(style={"height":"30px"}),
@@ -433,6 +437,7 @@ class SensorDashboard(DataLogger):
             Input("btn-driveMode6","n_clicks"),
             Input("btn-driveMode7","n_clicks"),
             Input("btn-cam","n_clicks"),
+            Input("btn-fil","n_clicks"),
             Input("btn-saveLog","n_clicks"),
             prevent_initial_call=True
         )
@@ -446,6 +451,7 @@ class SensorDashboard(DataLogger):
                            driveMode6_clicks,
                            driveMode7_clicks,
                            cam_clicks,
+                           fil_clicks,
                            saveLog_clicks
                            ):
             ctx = dash.callback_context
@@ -506,6 +512,15 @@ class SensorDashboard(DataLogger):
                 elif self.status_cam == False:
                     self.start_cam_thread()
                     text = f'Kamera gestartet'
+                return text
+            elif button_id == "btn-fil":
+#                if self.status_cam == True:
+                if self.status_fil == False:
+                    self.status_fil=True
+                    text = f'Kamera ungefiltert'
+                elif self.status_fil == True:
+                    self.status_fil=False
+                    text = f'Kamera gefiltert'               
                 return text
             elif button_id == "btn-saveLog":
                 self.car.save_logs()
@@ -575,7 +590,7 @@ class SensorDashboard(DataLogger):
             return [{"label": fname, "value": fname} for fname in self.available_logs]
         
     def run(self):
-        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
+        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=False, use_reloader=False) #lokale IP Adresse
         
 
 
