@@ -14,13 +14,17 @@ class CamCar(SensorCar):
         return img_hsv
         # return self.camera.get_frame()
 
-    def filtered_image(self, l, u, s_l):
-        lower_range, upper_range = np.array([l,0,0]), np.array([u,255,255])
+    def filtered_image(self, hue_l, hue_u, sat_l, sat_u, val_l, val_u, snipp_l, snipp_u):
+        lower_range, upper_range = np.array([hue_l,sat_l,val_l]), np.array([hue_u,sat_u,val_u])
         img = self.get_image()
         img_flt = cv2.inRange(img, lower_range, upper_range)
         img_flt = cv2.GaussianBlur(img_flt,(5,5),0)
         h,w = img_flt.shape
-        img_flt_cropped = img_flt[:h - int(s_l*h),:]
+        bottom = h - int(snipp_l*h)
+        top = int(snipp_u*h)
+        img_flt_cropped = img_flt[top:bottom,:]
         return img_flt_cropped
+    
+
 
     

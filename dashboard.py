@@ -38,7 +38,12 @@ class SensorDashboard(DataLogger):
         self.drive_distance = 0
         self.hue_l = 0
         self.hue_u = 255
+        self.sat_l = 0
+        self.sat_u = 255
+        self.val_l = 0
+        self.val_u = 255
         self.snipp_l = 0
+        self.snipp_u = 0
 
     def get_log(self):
         base_log = super().get_log()
@@ -71,7 +76,7 @@ class SensorDashboard(DataLogger):
     def _cam_worker(self):
         while self.status_cam:
             # frame = self.car.get_image()
-            frame = self.car.filtered_image(self.hue_l, self.hue_u, self.snipp_l)
+            frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
             if frame is not None:
                 _, buffer = cv2.imencode(".jpg", frame) 
                 self.latest_frame = base64.b64encode(buffer).decode("utf-8") 
@@ -148,29 +153,71 @@ class SensorDashboard(DataLogger):
                                 dbc.CardBody([
 
                                     html.Div([ 
-                                        html.Label("Hue lower"), 
+                                        html.Label("Hue lower"),
+                                        html.H4(id="hue_lower", className="card-title"),
                                         dcc.Slider( 
                                             id="slider-hue_lower",
-                                            min=0, max=179, step=1, value=179, 
+                                            min=0, max=179, step=1, value=90, 
                                             marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
                                             ), 
                                             html.Br(),
 
-                                        html.Label("Hue upper"), 
+                                        html.Label("Hue upper"),
+                                        html.H4(id="hue_upper", className="card-title"), 
                                         dcc.Slider( 
                                             id="slider-hue_upper", 
-                                            min=0, max=179, step=1, value=179, 
+                                            min=0, max=179, step=1, value=105, 
                                             marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
                                             ), 
                                             html.Br(),
 
+                                        html.Label("Sat lower"),
+                                        dcc.Slider( 
+                                            id="slider-sat_lower", 
+                                            min=0, max=255, step=1, value=0, 
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
+                                            ), 
+                                            html.Br(),
+
+                                        html.Label("Sat upper"), 
+                                        dcc.Slider( 
+                                            id="slider-sat_upper", 
+                                            min=0, max=255, step=1, value=255, 
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
+                                            ), 
+                                            html.Br(),                                            
+
+                                        html.Label("Val lower"),
+                                        dcc.Slider( 
+                                            id="slider-val_lower", 
+                                            min=0, max=255, step=1, value=0, 
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
+                                            ), 
+                                            html.Br(),
+
+                                        html.Label("Val upper"), 
+                                        dcc.Slider( 
+                                            id="slider-val_upper", 
+                                            min=0, max=255, step=1, value=255, 
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
+                                            ), 
+                                            html.Br(),
                                         html.Label("Snipp lower"), 
                                         dcc.Slider( 
                                             id="slider-snipp_lower", 
                                             min=0, max=0.3, step=0.01, value=0, 
                                             marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
                                             ), 
-                                            html.Br(), ]),
+                                            html.Br(),
+                                        html.Label("Snipp upper"), 
+                                        dcc.Slider( 
+                                            id="slider-snipp_upper", 
+                                            min=0, max=0.3, step=0.01, value=0, 
+                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
+                                            ), 
+                                            html.Br(),                                            
+
+ ]),                                            
 
                                     html.Img(id="live-image"),
                                     dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
@@ -347,18 +394,30 @@ class SensorDashboard(DataLogger):
         @self.app.callback(
             Output("speed-display", "children"),
             Output("angle-display", "children"),
+            Output("hue_lower", "children"),
+            Output("hue_upper", "children"),
             Input("speed-slider", "value"),
             Input("angle-slider", "value"),
             Input("slider-hue_lower","value"),
             Input("slider-hue_upper", "value"),
-            Input("slider-snipp_lower", "value")
+            Input("slider-sat_lower","value"),
+            Input("slider-sat_upper", "value"),
+            Input("slider-val_lower","value"),
+            Input("slider-val_upper", "value"),            
+            Input("slider-snipp_lower", "value"),
+            Input("slider-snipp_upper", "value")            
         )
-        def update_values(speed, angle, hue_l, hue_u, snipp_l):
+        def update_values(speed, angle, hue_l, hue_u,sat_l,sat_u,val_l,val_u, snipp_l, snipp_u):
             self.car.speed = speed
             self.car.steering_angle = angle
             self.hue_l = hue_l
             self.hue_u = hue_u
+            self.sat_l = sat_l
+            self.sat_u = sat_u
+            self.val_l = val_l
+            self.val_u = val_u                        
             self.snipp_l = snipp_l
+            self.snipp_u = snipp_u
             self.car.drive()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
@@ -516,7 +575,7 @@ class SensorDashboard(DataLogger):
             return [{"label": fname, "value": fname} for fname in self.available_logs]
         
     def run(self):
-        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=False, use_reloader=False) #lokale IP Adresse
+        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
         
 
 
