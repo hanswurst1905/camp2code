@@ -173,6 +173,10 @@ class BaseCar():
         new_config[serial_number]["min_wheel_speed"] = min_wheel_speed
         return new_config
 
+    def get_pi_serial_number(self) -> str:
+        REGEX = re.compile(r"^Serial\s+:\s+([0-9a-f]+)$", re.MULTILINE)
+        cpuinfo = Path("/proc/cpuinfo").read_text()
+        return REGEX.search(cpuinfo).group(1)
 
     def read_config_json(self) -> dict:
         '''
@@ -180,7 +184,7 @@ class BaseCar():
         '''
         REGEX = re.compile(r"^Serial\s+:\s+([0-9a-f]+)$", re.MULTILINE)
         cpuinfo = Path("/proc/cpuinfo").read_text()
-        serial_number = REGEX.search(cpuinfo).group(1)
+        serial_number = self.get_pi_serial_number()
         with open('./software/config.json') as f:
             try:
                 config_file = json.load(f)

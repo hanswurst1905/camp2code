@@ -27,8 +27,6 @@ class SensorDashboard(DataLogger):
         self.available_logs =  []
         # self.is_driving = False  # Fahrstatus
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-        self._setup_layout()
-        self._setup_callbacks()
         # self.dist = 5
         self.speed_mean = 0
         self.speed_min = 0
@@ -37,14 +35,35 @@ class SensorDashboard(DataLogger):
         self.ultrasonic_distance = 0
         self.drive_thread = None
         self.drive_distance = 0
-        self.hue_l = 0
-        self.hue_u = 255
-        self.sat_l = 0
-        self.sat_u = 255
-        self.val_l = 0
-        self.val_u = 255
-        self.snipp_l = 0
-        self.snipp_u = 0
+
+        car_config=self.car.read_config_json()
+        serial_number = self.car.get_pi_serial_number()
+        if "hue_threshold" in car_config[serial_number]:
+            self.hue_l = car_config[serial_number]["hue_threshold"][0]
+            self.hue_u = car_config[serial_number]["hue_threshold"][1]
+        else:
+            self.hue_l = 0
+            self.hue_u = 255
+        if "sat_threshold" in car_config[serial_number]:
+            self.sat_l = car_config[serial_number]["sat_threshold"][0]
+            self.sat_u = car_config[serial_number]["sat_threshold"][1]
+        else:
+            self.sat_l = 0
+            self.sat_u = 255
+        if "val_threshold" in car_config[serial_number]:
+            self.val_l = car_config[serial_number]["val_threshold"][0]
+            self.val_u = car_config[serial_number]["val_threshold"][1]
+        else:
+            self.val_l = 0
+            self.val_u = 255
+        if "snipp_threshold" in car_config[serial_number]:
+            self.snipp_l = car_config[serial_number]["snipp_threshold"][0]
+            self.snipp_u = car_config[serial_number]["snipp_threshold"][1]
+        else:
+            self.snipp_l = 0
+            self.snipp_u = 0
+        self._setup_layout()
+        self._setup_callbacks()
 
     def get_log(self):
         base_log = super().get_log()
@@ -129,7 +148,8 @@ class SensorDashboard(DataLogger):
                         html.Div(style={"height": "30px"}),
                         dbc.Col(dbc.Button("Fahrmodus_1", id="btn-driveMode1", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Fahrmodus_2", id="btn-driveMode2", color="success", className="title"), width=2),
-                        dbc.Col(dbc.Button("Fahrmodus_3", id="btn-driveMode3", color="success", className="title"), width=2),
+                        dbc.Col(dbc.Button("Fahrmodus_3", id="btn-driveMode3", color="success", className="title"), width=4),
+                        dbc.Col(dbc.Button("Filter speichern", id="btn-save-filter", color="success", className="title"), width=2),
                 ]),
 
                     dbc.Row([
@@ -161,7 +181,7 @@ class SensorDashboard(DataLogger):
                                         html.H4(id="hue_lower", className="card-title"),
                                         dcc.Slider( 
                                             id="slider-hue_lower",
-                                            min=0, max=179, step=1, value=90, 
+                                            min=0, max=179, step=1, value=self.hue_l, 
                                             marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
                                             ), 
                                             html.Br(),
@@ -170,7 +190,7 @@ class SensorDashboard(DataLogger):
                                         html.H4(id="hue_upper", className="card-title"), 
                                         dcc.Slider( 
                                             id="slider-hue_upper", 
-                                            min=0, max=179, step=1, value=105, 
+                                            min=0, max=179, step=1, value=self.hue_u, 
                                             marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
                                             ), 
                                             html.Br(),
@@ -178,7 +198,7 @@ class SensorDashboard(DataLogger):
                                         html.Label("Sat lower"),
                                         dcc.Slider( 
                                             id="slider-sat_lower", 
-                                            min=0, max=255, step=1, value=0, 
+                                            min=0, max=255, step=1, value=self.sat_l, 
                                             marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
                                             ), 
                                             html.Br(),
@@ -186,7 +206,7 @@ class SensorDashboard(DataLogger):
                                         html.Label("Sat upper"), 
                                         dcc.Slider( 
                                             id="slider-sat_upper", 
-                                            min=0, max=255, step=1, value=255, 
+                                            min=0, max=255, step=1, value=self.sat_u, 
                                             marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
                                             ), 
                                             html.Br(),                                            
@@ -194,7 +214,7 @@ class SensorDashboard(DataLogger):
                                         html.Label("Val lower"),
                                         dcc.Slider( 
                                             id="slider-val_lower", 
-                                            min=0, max=255, step=1, value=0, 
+                                            min=0, max=255, step=1, value=self.val_l, 
                                             marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
                                             ), 
                                             html.Br(),
@@ -202,21 +222,21 @@ class SensorDashboard(DataLogger):
                                         html.Label("Val upper"), 
                                         dcc.Slider( 
                                             id="slider-val_upper", 
-                                            min=0, max=255, step=1, value=255, 
+                                            min=0, max=255, step=1, value=self.val_u, 
                                             marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
                                             ), 
                                             html.Br(),
                                         html.Label("Snipp lower"), 
                                         dcc.Slider( 
                                             id="slider-snipp_lower", 
-                                            min=0, max=0.3, step=0.01, value=0, 
+                                            min=0, max=0.3, step=0.01, value=self.snipp_l, 
                                             marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
                                             ), 
                                             html.Br(),
                                         html.Label("Snipp upper"), 
                                         dcc.Slider( 
                                             id="slider-snipp_upper", 
-                                            min=0, max=0.3, step=0.01, value=0, 
+                                            min=0, max=0.3, step=0.01, value=self.snipp_u, 
                                             marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
                                             ), 
                                             html.Br(),                                            
@@ -439,6 +459,7 @@ class SensorDashboard(DataLogger):
             Input("btn-cam","n_clicks"),
             Input("btn-fil","n_clicks"),
             Input("btn-saveLog","n_clicks"),
+            Input("btn-save-filter","n_clicks"),
             prevent_initial_call=True
         )
         def handle_buttons(drive_clicks,
@@ -452,7 +473,8 @@ class SensorDashboard(DataLogger):
                            driveMode7_clicks,
                            cam_clicks,
                            fil_clicks,
-                           saveLog_clicks
+                           saveLog_clicks,
+                           saveFilter_clicks
                            ):
             ctx = dash.callback_context
             if not ctx.triggered:
@@ -524,6 +546,16 @@ class SensorDashboard(DataLogger):
                 return text
             elif button_id == "btn-saveLog":
                 self.car.save_logs()
+            elif button_id == "btn-save-filter":
+                car_config=self.car.read_config_json()
+                serial_number = self.car.get_pi_serial_number()
+                car_config[serial_number]["hue_threshold"] = [self.hue_l, self.hue_u]
+                car_config[serial_number]["sat_threshold"] = [self.sat_l, self.sat_u]
+                car_config[serial_number]["val_threshold"] = [self.val_l, self.val_u]
+                car_config[serial_number]["snipp_threshold"] = [self.snipp_l, self.snipp_u]
+                with open('./software/config.json','w') as f:
+                    json.dump(car_config, f, sort_keys=True, indent=4)
+
                 
             
 
