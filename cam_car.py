@@ -56,7 +56,11 @@ class CamCar(SensorCar):
             }
 
     
-            
+    def export_cv_filters(self):
+        car_config=self.read_config_json()
+        serial_number = self.get_pi_serial_number()
+        car_config[serial_number]["img_filter"] = self._img_filter
+        self.write_config_json(car_config)
 
     @property
     def img_filter(self):
@@ -246,3 +250,10 @@ class CamCar(SensorCar):
             if self.state == "stop":
                 print("CamCar Ende")
                 break
+
+def main():
+    car = CamCar()
+    car.export_cv_filters()
+
+if __name__ == "__main__":
+    main()
