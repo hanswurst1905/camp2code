@@ -16,7 +16,6 @@ import cv2, base64
 class SensorDashboard(DataLogger):
     def __init__(self,car):
         super().__init__(car)
-        self.cap = cv2.VideoCapture(0)
         self.status_cam = False
         self.cam_thread = None
         self.latest_frame = None
@@ -71,7 +70,7 @@ class SensorDashboard(DataLogger):
             # frame = self.car.get_image()
             # frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
             
-            frame = self.car.image_filtered
+            frame = self.car.image
 
             if frame is not None:
                 _, buffer = cv2.imencode(".jpg", frame)
@@ -205,7 +204,7 @@ class SensorDashboard(DataLogger):
                                             id="slider-val_upper", 
                                             min=0, max=255, step=1,
                                             marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"},
-                                            value= self.car._img_filter["val_l"]
+                                            value= self.car._img_filter["val_u"]
                                             ), 
                                             html.Br(),
                                         html.Label("Snipp lower"), 
