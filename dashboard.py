@@ -70,7 +70,7 @@ class SensorDashboard(DataLogger):
             # frame = self.car.get_image()
             # frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
             
-            frame = self.car.image
+            frame = self.car.image_filtered
 
             if frame is not None:
                 _, buffer = cv2.imencode(".jpg", frame)

@@ -51,9 +51,9 @@ class CamCar(SensorCar):
                 "fil_angle": 0.3,
                 "canny_l": 50,
                 "canny_u": 150,
-                "hough_line_treshold": 60,
+                "hough_line_treshold": 30,
                 "hough_line_line_minLineLength": 30,
-                "hough_line_maxLineGap": 15
+                "hough_line_maxLineGap": 30
             }
 
     
@@ -79,7 +79,6 @@ class CamCar(SensorCar):
         self.h, self.w = self.img.shape[:2]
         self.img_hsv = cv2.cvtColor(self.img,cv2.COLOR_BGR2HSV)
         return self.img
-        # return self.camera.get_frame()
 
     @property
     def image(self):
@@ -122,54 +121,60 @@ class CamCar(SensorCar):
 
         kernel = np.ones((2,2), dtype='uint8')
         img_dil = cv2.dilate(self.img_flt_cropped, kernel, iterations = 1)
-        self.img_edges = cv2.Canny(img_dil, 50,150)
+        self.img_edges = cv2.Canny(img_dil, self._img_filter["canny_l"],self._img_filter["canny_u"])
 
         self.line_detection()
-        return self.img
+        # return self.img
     
     def line_detection(self):
-        max_lines = 10
+        max_lines = 30
         try:
             if self.img_flt_cropped is None:
                 return
+            lines = cv2.HoughLinesP(self.img_edges,1,np.pi/180, self._img_filter["hough_line_treshold"], minLineLength=self._img_filter["hough_line_line_minLineLength"], maxLineGap=self._img_filter["hough_line_maxLineGap"])
 
-            edges = cv2.Canny(self.img_flt_cropped, self._img_filter["canny_l"],self._img_filter["canny_u"])
-            lines = cv2.HoughLinesP(edges,1,np.pi/180, self._img_filter["hough_line_treshold"], minLineLength=self._img_filter["hough_line_line_minLineLength"], maxLineGap=self._img_filter["hough_line_maxLineGap"])
-
-            # print("lines: ", lines)
+            print("lines: ", lines)
             img = self.img_flt_cropped.copy()
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
             if lines is not None:
-                print("lines: ",lines)
-                self.avg_right_line, self.avg_left_line = [],[]
+                self.avg_right_line, self.avg_left_line, self.right_line, self.left_line = [],[], [], []
                 self.left_det, self.right_det = False, False
                 for line in lines:
+                    if line[0] is None or len(line[0]) != 4:
+                        continue
                     x1,y1,x2,y2 = line[0]
-                    if x2 <= self.w/2: #left side line
+                    if x2 <= self.w * 0.6 and x1 <= self.w * 0.4: #left side line
                         self.left_det = True
-                        self.left_line.append(line[0])
-                        if len(self.left_line) > max_lines:
-                            del self.left_line[0]
-                        #     # print("left_line:", self.left_line)
-                        #     break
-                    elif x2 > self.w/2: #right side line
+                        
+                        if len(self.left_line) < max_lines:
+                            self.left_line.append(line[0])
+                    elif x2 > self.w * 0.6 and x1 > self.w * 0.4: #right side line
                         self.right_det = True
-                        self.right_line.append(line[0])
-                        if len(self.right_line) > max_lines:
-                            del self.right_line[0]
-                        #     # print("right_line: ", self.right_line)
-                        #     break
-                    # cv2.line(self.img,(x1,y1+self.top),(x2,y2+self.top),(0,255,255),2)
-                self.avg_left_line = np.mean(self.left_line, axis=0).astype(int) #mittelwert statt median, da der median tanzt
-                self.avg_left_line = self.avg_left_line.tolist()
-                self.avg_right_line = np.mean(self.right_line, axis=0).astype(int)
-                self.avg_right_line = self.avg_right_line.tolist()
+                        print("right det: ", self.right_det)
+                        if len(self.right_line) < max_lines:
+                            self.right_line.append(line[0])
+                print("l det, r_det:", self.left_det, self.right_det)
+                # mean calculation
+                if len(self.left_line) > 0:
+                    self.avg_left_line = np.mean(self.left_line, axis=0).astype(int) #mittelwert statt median, da der median tanzt
+                    self.avg_left_line = self.avg_left_line.tolist()
+                else:
+                    self.avg_left_line = None
+
+                if len(self.right_line) > 0:
+                    self.avg_right_line = np.mean(self.right_line, axis=0).astype(int)
+                    self.avg_right_line = self.avg_right_line.tolist()
+                else:
+                    self.avg_right_line = None
+                # print lines
                 for line in [self.avg_left_line, self.avg_right_line]:
-                    # print("line, top: ",line, self.top)
-                    x1,y1,x2,y2 = line
-                    cv2.line(self.img_filtered,(x1,y1+self.top),(x2,y2+self.top),(0,255,255),2)
+                    if line is not None and len(line) == 4:
+                        x1,y1,x2,y2 = line
+                        cv2.line(self.img_filtered,(x1,y1+self.top),(x2,y2+self.top),(0,150,255),2)
+                print("eins vor calc_steering")
                 self.calc_steering_angle_lr()
+                print("calc steering aufgerufen")
             self.img_lined = img
 
         except Exception as e:
@@ -178,40 +183,46 @@ class CamCar(SensorCar):
 
 
     def calc_steering_angle_lr(self):
+        x1l,y1l,x2l,y2l,x1r,y1r,x2r,y2r = 0,0,0,0,0,0,0,0
         img_center = self.w / 2
-        x1l,y1l,x2l,y2l = self.avg_left_line
-        x1r,y1r,x2r,y2r = self.avg_right_line
-
-        dxl, dyl = x1l-x2l, y1l-y2l
-        angle_left = 90 + math.degrees(math.atan2(dxl,dyl))
-        offset = ((x1l+x2l)/2) - img_center
-        self.angle_left_corr = angle_left - offset * self._img_filter["fac_angle"]
         
-        dxr, dyr = x1r-x2r, y1r-y2r
-        angle_right = 180+math.degrees(math.atan2(dyr,dxr))
-        offset = ((x1r+x2r)/2) - img_center
-        self.angle_right_corr = angle_right + offset * self._img_filter["fac_angle"]
+        if self.left_det == True:
+            x1l,y1l,x2l,y2l = self.avg_left_line
+            dxl, dyl = x1l-x2l, y1l-y2l
+            angle_left = 180 - math.degrees(math.atan2(dyl,dxl))
+            offset = ((x1l+x2l)/2) - img_center
+            self.angle_left_corr = angle_left - offset * self._img_filter["fac_angle"]
+
+        if self.right_det == True:
+            x1r,y1r,x2r,y2r = self.avg_right_line
+            dxr, dyr = x1r-x2r, y1r-y2r
+            angle_right = 180+math.degrees(math.atan2(dyr,dxr))
+            offset = ((x1r+x2r)/2) - img_center
+            self.angle_right_corr = angle_right + offset * self._img_filter["fac_angle"]
 
         if self.left_det == True and self.right_det == True:
             angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2
             self.ang_ofs_l, self.ang_ofs_r = 0, 0
 
-        elif self.left_det == True:
+        if self.left_det == True:
             if x1l <= 100 and y1l >= 350:
                 self.ang_ofs_l = max(self.ang_ofs_l - 1, -15)
             elif x1l > 100 and y1l < 350 :
                 self.ang_ofs_l = min(self.ang_ofs_l + 1, 15)
             angle_tar = 180 - self.angle_left_corr + self.ang_ofs_l
+            # angle_tar = 180 - self.angle_left_corr
 
-        elif self.right_det == True:
+        if self.right_det == True:
             if x2r >= 540 and y2r >= 350:
                 self.ang_ofs_r = min(self.ang_ofs_r + 1, 15)
             elif x2r < 540 and y2r < 350:
                 self.ang_ofs_r = max(self.ang_ofs_r - 1, -15)
             angle_tar = self.angle_right_corr + self.ang_ofs_r
+            # angle_tar = self.angle_right_corr
 
         elif self.left_det == False and self.right_det == False:
-            self.speed = 0
+            pass
+            # self.speed = 0
 
         alpha = self.img_filter["fil_angle"]
 
@@ -234,7 +245,7 @@ class CamCar(SensorCar):
         self.steering_angle_filtered = max(min(self.steering_angle_filtered, 135), 45)
         self.steering_angle = self.steering_angle_filtered
 
-        print("left_det, right_det: ", self.left_det, self.right_det,180 - self.angle_left_corr, self.angle_right_corr, angle_tar, x1l, x2r)
+        print("left_det, right_det: ", self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, angle_tar, x1l, x2r)
 
            
     def fahrmodus_cam(self):
@@ -247,6 +258,7 @@ class CamCar(SensorCar):
 def main():
     car = CamCar()
     car.export_cv_filters()
+    car.fahrmodus_cam()
 
 if __name__ == "__main__":
     main()
