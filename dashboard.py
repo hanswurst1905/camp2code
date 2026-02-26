@@ -1,12 +1,14 @@
 import dash
 from dash import html, dcc, Output, Input, Dash, State, dash_table
+from flask import Response
 import dash_bootstrap_components as dbc
 # from base_car import DataLogger
 from datalogger import DataLogger
 import plotly.express as px
 from sonic_car import*
 # from sensor_car import SensorCar
-from cam_car import CamCar
+from opencv_car import (OpenCVCar)
+# from opencv_car import OpenCVCar
 import threading
 import os
 import pandas as pd
@@ -27,6 +29,8 @@ class SensorDashboard(DataLogger):
         self.available_logs =  []
         # self.is_driving = False  # Fahrstatus
         self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+        self._setup_layout()
+        self._setup_callbacks()
         # self.dist = 5
         self.speed_mean = 0
         self.speed_min = 0
@@ -35,35 +39,44 @@ class SensorDashboard(DataLogger):
         self.ultrasonic_distance = 0
         self.drive_thread = None
         self.drive_distance = 0
+        self.hue_l = 0
+        self.hue_u = 255
+        self.sat_l = 0
+        self.sat_u = 255
+        self.val_l = 0
+        self.val_u = 255
+        self.snipp_l = 0
+        self.snipp_u = 0
+        self.cam_mode = "raw"
+        self.server = self.app.server    # Flask-Server aus der Dash-App holen
+        self._add_routes()               # Routen registrieren
 
-        car_config=self.car.read_config_json()
-        serial_number = self.car.get_pi_serial_number()
-        if "hue_threshold" in car_config[serial_number]:
-            self.hue_l = car_config[serial_number]["hue_threshold"][0]
-            self.hue_u = car_config[serial_number]["hue_threshold"][1]
-        else:
-            self.hue_l = 0
-            self.hue_u = 255
-        if "sat_threshold" in car_config[serial_number]:
-            self.sat_l = car_config[serial_number]["sat_threshold"][0]
-            self.sat_u = car_config[serial_number]["sat_threshold"][1]
-        else:
-            self.sat_l = 0
-            self.sat_u = 255
-        if "val_threshold" in car_config[serial_number]:
-            self.val_l = car_config[serial_number]["val_threshold"][0]
-            self.val_u = car_config[serial_number]["val_threshold"][1]
-        else:
-            self.val_l = 0
-            self.val_u = 255
-        if "snipp_threshold" in car_config[serial_number]:
-            self.snipp_l = car_config[serial_number]["snipp_threshold"][0]
-            self.snipp_u = car_config[serial_number]["snipp_threshold"][1]
-        else:
-            self.snipp_l = 0
-            self.snipp_u = 0
-        self._setup_layout()
-        self._setup_callbacks()
+    def generate_stream(self, kind="raw"):
+        """Generator, der JPEG-Frames für den Videostream liefert."""
+        while True:                                                  # Endlosschleife für kontinuierlichen Stream
+            if kind=="raw":
+                frame = self.car.img_prop                             # Aktuelles Bild vom Auto holen
+                print("frame:",frame)
+            elif kind=="resized":
+                frame = self.car.frame_resized()
+            elif kind=="prep":
+                frame = self.car.frame_prep()
+            _, frame_as_jpeg = cv2.imencode(".jpeg", frame)          # Bild als JPEG kodieren
+            frame_in_bytes = frame_as_jpeg.tobytes()                 # JPEG in Bytes umwandeln
+            frame_as_string = (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame_in_bytes + b'\r\n\r\n')
+            yield frame_as_string                                    # Einzelnen Frame an den Client senden
+
+    def _add_routes(self):
+        """Registriert die Flask-Route für den Videostream."""
+        outer_self = self                                            # Workaround, damit inner Funktion auf self zugreifen kann
+
+        @self.server.route("/video_stream")                          # Flask-Route am Server registrieren
+        def video_stream():
+            return Response(                                         # HTTP-Response erzeugen
+                outer_self.generate_stream(),                        # Generator als Response-Inhalt
+                mimetype='multipart/x-mixed-replace; boundary=frame' # MIME-Typ für MJPEG-Stream
+            )
+
 
     def get_log(self):
         base_log = super().get_log()
@@ -96,159 +109,217 @@ class SensorDashboard(DataLogger):
     def _cam_worker(self):
         while self.status_cam:
             if self.status_fil == False:
-               frame = self.car.get_image()
+                frame = self.car.get_image()
             elif self.status_fil == True:
-               frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
+                frame = self.car.frame_resized()
+#                frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
             if frame is not None:
                 _, buffer = cv2.imencode(".jpg", frame) 
                 self.latest_frame = base64.b64encode(buffer).decode("utf-8") 
                 time.sleep(0.05)
 
     def _setup_layout(self):
+        show = 0
         self.app.layout = dbc.Container([
             html.H2("PiCar Dashboard", className="text-center my-4"),
 
             dbc.Tabs([
+                dbc.Tab(label="Test", tab_id="tab-steuerung", children=[
+                    dbc.Row([#Zeile1
+                        dbc.Col([dbc.FormText("Zeile 1, Spalte 1") if show else None,# Spalte 1
+                                        html.Div(style={"height": "10px"}),
+                                        html.Div(html.Img(src="/video_stream")),                            
+                                        html.Div(style={"height": "10px"}),
+                                        dbc.Card([
+                                            dbc.CardHeader("Cam"),
+                                            dbc.CardBody([
+                                                html.Label("Cam Mode"),
+                                                dcc.Slider(
+                                                id="slider-cam_mode",
+                                                min=0,
+                                                max=2,
+                                                step=1,
+                                                value=0,
+                                                marks={0: "raw", 1: "resized", 2: "prep"})
+                                            ])
+                                        ], color="info", inverse=True),
+                                   
+                            dbc.Row([#Zeile2
+                                dbc.Col([ dbc.FormText("Z2C1") if show else None ]),
+                                dbc.Col([ dbc.FormText("Z2C2") if show else None ]),
+                                dbc.Col([ dbc.FormText("Z2C3") if show else None ]),
+                            ]),
+                            dbc.Row([#Zeile3
+                                dbc.Col([ dbc.FormText("Z3C1") if show else None ]),
+                                dbc.Col([ dbc.FormText("Z3C2") if show else None ]),
+                                dbc.Col([ dbc.FormText("Z3C3") if show else None ]),
+                            ])
+                        ]),
+                        dbc.Col([# Spalte 2
+                            dbc.Row([#Zeile2
+                                html.Div(style={"height": "10px"}),
+                                html.Div(html.Img(src="/video_stream")),
+                                dbc.Col([ dbc.FormText("Z2C2") if show else None ]),
+                                dbc.Col([ dbc.FormText("Z2C3") if show else None ]),
+                                dbc.Col([ dbc.FormText("Z2C4") if show else None ]),
+                            ]),
+                            dbc.Row([#Zeile3
+                                dbc.Col([ dbc.FormText("Z3C2") if show else None ]),
+                                dbc.Col([ dbc.FormText("Z3C3") if show else None ]),
+                                dbc.Col([ dbc.FormText("Z3C4") if show else None ]),
+                            ])                            
+                        ])
+                    ])
+                ]),
 #################
 # Tab 1: Fahren
 #################
-                dbc.Tab(label="Fahren", tab_id="tab-steuerung", children=[
+                dbc.Tab(label="Fahren", tab_id="tab-test", children=[
                     dbc.Row([
-                        html.Div(style={"height": "30px"}),
-                        dbc.Col(dbc.Button("Fahren", id="btn-drive", color="success", className="title"), width=6),
-                        dbc.Col(dbc.Button("Stop", id="btn-stop", color="danger", className="title"), width=6),
-                    ]),
-
-                html.Div(style={"height":"30px"}),                    
-
-                    dbc.Row([
-                        dbc.Col(dbc.Card([
-                            dbc.CardHeader("Speed"),
-                            dbc.CardBody([
-                                html.H4(id="speed-display", className="card-title"),
-                                dcc.Slider(
-                                    id="speed-slider", min=-100, max=100, step=1, value=self.car.speed,
-                                    marks={-100: "-100", -30: "-30", 0: "0", 30: "30", 100: "100"}
-                                )
-                            ])
-                        ], color="primary", inverse=True), width=6),
-
-                        dbc.Col(dbc.Card([
-                            dbc.CardHeader("Steering Angle"),
-                            dbc.CardBody([
-                                html.H4(id="angle-display", className="card-title"),
-                                dcc.Slider(
-                                    id="angle-slider", min=45, max=135, step=1, value=self.car.steering_angle,
-                                    marks={45: "45°",70: "70°",80: "80°", 90: "90°",100: "100°", 110: "110°", 135: "135°"}
-                                )
-                            ])
-                        ], color="info", inverse=True), width=6),
-                    ]),
-                    dbc.Row([
-                        html.Div(style={"height": "30px"}),
-                        dbc.Col(dbc.Button("Fahrmodus_1", id="btn-driveMode1", color="success", className="title"), width=2),
-                        dbc.Col(dbc.Button("Fahrmodus_2", id="btn-driveMode2", color="success", className="title"), width=2),
-                        dbc.Col(dbc.Button("Fahrmodus_3", id="btn-driveMode3", color="success", className="title"), width=4),
-                        dbc.Col(dbc.Button("Filter speichern", id="btn-save-filter", color="success", className="title"), width=2),
-                ]),
-
-                    dbc.Row([
-                        html.Div(style={"height": "30px"}),
-                        dbc.Col(dbc.Button("Fahrmodus_4", id="btn-driveMode4", color="success", className="title"), width=2),
-                        dbc.Col(dbc.Button("Fahrmodus_5", id="btn-driveMode5", color="success", className="title"), width=2),
-                        dbc.Col(dbc.Button("Fahrmodus_6", id="btn-driveMode6", color="success", className="title"), width=2),
-                        dbc.Col(dbc.Button("Fahrmodus_7", id="btn-driveMode7", color="success", className="title"), width=2),
-                        dbc.Col(dbc.Button("Kamerabild", id="btn-cam", color="warning", className="title"), width=2),
-                        dbc.Col(dbc.Button("Kamerafilter", id="btn-fil", color="warning", className="title"), width=2),
-                ]),
-
-                html.Div(style={"height":"30px"}),
-                    dbc.Row([
-                        dbc.Col(
-                            dbc.Card([
-                                dbc.CardHeader("Fahrzeugstatus"),
+                        dbc.Col([# Spalte 1
+                            dbc.Row([# Spalte1 Zeile 1
+                                html.Div(style={"height": "10px"}),
+                                dbc.Col(dbc.Button("Fahren", id="btn-drive", color="success", className="title"),width=4,),
+                                dbc.Col(dbc.Button("Fahrmodus_1", id="btn-driveMode1", color="success", className="title"),width=2,),
+                                dbc.Col(dbc.Button("Fahrmodus_2", id="btn-driveMode2", color="success", className="title"),width=2,),    
+                                dbc.Col(dbc.Button("Fahrmodus_3", id="btn-driveMode3", color="success", className="title"),width=2,),
+                            ]),
+                            dbc.Row([# Spalte 1 Zeile 2
+                                html.Div(style={"height": "10px"}),
+                                dbc.Col(dbc.Button("Stop", id="btn-stop", color="danger", className="title"),width=4,),
+                                dbc.Col(dbc.Button("Fahrmodus_4", id="btn-driveMode4", color="success", className="title"), width=2,),
+                                dbc.Col(dbc.Button("Fahrmodus_5", id="btn-driveMode5", color="success", className="title"), width=2,),     
+                                dbc.Col(dbc.Button("Fahrmodus_6", id="btn-driveMode6", color="success", className="title"), width=2,),
+                            ]),
+                            dbc.Row([# Spalte 1 Zeile 3
+                                html.Div(style={"height": "10px"}),
+                                dbc.Col(dbc.FormText(""), width=4,),
+                                dbc.Col(dbc.Button("Fahrmodus_7", id="btn-driveMode7", color="success", className="title"), width=2,),
+                                dbc.Col(dbc.Button("Fahrmodus_8", id="btn-driveMode8", color="success", className="title"), width=2,),     
+                                dbc.Col(dbc.Button("Fahrmodus_9", id="btn-driveMode9", color="success", className="title"), width=2,),
+                            ]),
+                            dbc.Row([# Spalte 1 Zeile 4
+                                html.Div(style={"height": "10px"}),
+                                dbc.Card([
+                                dbc.CardHeader("Speed"),
                                 dbc.CardBody([
-                                html.H4(id="Messwert3", className="title")
-                                ])
-                            ], color="success", inverse=True, outline=False), width=6),
-                        dbc.Col(
-                            dbc.Card([
-                                dbc.CardHeader("Cam"),
+                                    html.H4(id="speed-display", className="card-title"),
+                                    dcc.Slider(
+                                        id="speed-slider", min=-100, max=100, step=1, value=self.car.speed,
+                                        marks={-100: "-100", -30: "-30", 0: "0", 30: "30", 100: "100"}
+                                    )])], color="primary", inverse=True)
+                            ]),
+                            dbc.Row([# Spalte 1 Zeile 5
+                                html.Div(style={"height": "10px"}),
+                                dbc.Card([
+                                dbc.CardHeader("Steering Angle"),
                                 dbc.CardBody([
+                                    html.H4(id="angle-display", className="card-title"),
+                                    dcc.Slider(
+                                        id="angle-slider", min=45, max=135, step=1, value=self.car.steering_angle,
+                                        marks={45: "45°",70: "70°",80: "80°", 90: "90°",100: "100°", 110: "110°", 135: "135°"}
+                                    )])], color="info", inverse=True)
+                            ]),
+                            dbc.Row([# Spalte 1 Zeile 6
+                                html.Div(style={"height": "10px"}),
+                                dbc.Card([
+                                    dbc.CardHeader("Fahrzeugstatus"),
+                                    dbc.CardBody([
+                                    html.H4(id="Messwert3", className="title")
+                                    ])], color="success", inverse=True, outline=False)
+                            ]),
+                            dbc.Row([# Spalte 1 Zeile 6
+                                html.Div(style={"height": "10px"}),
+                                html.Img(id="live-image"),
+                                dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
+                            ])
+                        ], width=6),
+                        dbc.Col([# Spalte 2
+                            dbc.Row([# Spalte2 Zeile 1
+                                html.Div(style={"height": "10px"}),
+                                dbc.Col(dbc.FormText(""), width=4,),
+                                dbc.Col(dbc.Button("Kamerabild", id="btn-cam", color="warning", className="title"), width=2),
+                                dbc.Col(dbc.Button("Kamerafilter", id="btn-fil", color="warning", className="title"), width=2),
 
-                                    html.Div([ 
-                                        html.Label("Hue lower"),
-                                        html.H4(id="hue_lower", className="card-title"),
-                                        dcc.Slider( 
-                                            id="slider-hue_lower",
-                                            min=0, max=179, step=1, value=self.hue_l, 
-                                            marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
-                                            ), 
-                                            html.Br(),
+                            ]),
+                            dbc.Row([# Spalte2 Zeile 2
+                                html.Div(style={"height": "10px"}),
+                                dbc.Col(
+                                dbc.Card([
+                                    dbc.CardBody([
+                                        html.Div([ 
+                                            html.Label("Hue lower"),
+                                            html.H4(id="hue_lower", className="card-title"),
+                                            dcc.Slider( 
+                                                id="slider-hue_lower",
+                                                min=0, max=179, step=1, value=90, 
+                                                marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
+                                                ), 
+                                                html.Br(),
 
-                                        html.Label("Hue upper"),
-                                        html.H4(id="hue_upper", className="card-title"), 
-                                        dcc.Slider( 
-                                            id="slider-hue_upper", 
-                                            min=0, max=179, step=1, value=self.hue_u, 
-                                            marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
-                                            ), 
-                                            html.Br(),
+                                            html.Label("Hue upper"),
+                                            html.H4(id="hue_upper", className="card-title"), 
+                                            dcc.Slider( 
+                                                id="slider-hue_upper", 
+                                                min=0, max=179, step=1, value=105, 
+                                                marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
+                                                ), 
+                                                html.Br(),
 
-                                        html.Label("Sat lower"),
-                                        dcc.Slider( 
-                                            id="slider-sat_lower", 
-                                            min=0, max=255, step=1, value=self.sat_l, 
-                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
-                                            ), 
-                                            html.Br(),
+                                            html.Label("Sat lower"),
+                                            dcc.Slider( 
+                                                id="slider-sat_lower", 
+                                                min=0, max=255, step=1, value=0, 
+                                                marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
+                                                ), 
+                                                html.Br(),
 
-                                        html.Label("Sat upper"), 
-                                        dcc.Slider( 
-                                            id="slider-sat_upper", 
-                                            min=0, max=255, step=1, value=self.sat_u, 
-                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
-                                            ), 
-                                            html.Br(),                                            
+                                            html.Label("Sat upper"), 
+                                            dcc.Slider( 
+                                                id="slider-sat_upper", 
+                                                min=0, max=255, step=1, value=255, 
+                                                marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
+                                                ), 
+                                                html.Br(),                                            
 
-                                        html.Label("Val lower"),
-                                        dcc.Slider( 
-                                            id="slider-val_lower", 
-                                            min=0, max=255, step=1, value=self.val_l, 
-                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
-                                            ), 
-                                            html.Br(),
+                                            html.Label("Val lower"),
+                                            dcc.Slider( 
+                                                id="slider-val_lower", 
+                                                min=0, max=255, step=1, value=0, 
+                                                marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
+                                                ), 
+                                                html.Br(),
 
-                                        html.Label("Val upper"), 
-                                        dcc.Slider( 
-                                            id="slider-val_upper", 
-                                            min=0, max=255, step=1, value=self.val_u, 
-                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
-                                            ), 
-                                            html.Br(),
-                                        html.Label("Snipp lower"), 
-                                        dcc.Slider( 
-                                            id="slider-snipp_lower", 
-                                            min=0, max=0.3, step=0.01, value=self.snipp_l, 
-                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
-                                            ), 
-                                            html.Br(),
-                                        html.Label("Snipp upper"), 
-                                        dcc.Slider( 
-                                            id="slider-snipp_upper", 
-                                            min=0, max=0.3, step=0.01, value=self.snipp_u, 
-                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
-                                            ), 
-                                            html.Br(),                                            
-
- ]),                                            
-
-                                    html.Img(id="live-image"),
-                                    dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
-                                ])
-                            ], color="success", inverse=True, outline=False), width=6),
+                                            html.Label("Val upper"), 
+                                            dcc.Slider( 
+                                                id="slider-val_upper", 
+                                                min=0, max=255, step=1, value=255, 
+                                                marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
+                                                ), 
+                                                html.Br(),
+                                            html.Label("Snipp lower"), 
+                                            dcc.Slider( 
+                                                id="slider-snipp_lower", 
+                                                min=0, max=0.3, step=0.01, value=0, 
+                                                marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
+                                                ), 
+                                                html.Br(),
+                                            html.Label("Snipp upper"), 
+                                            dcc.Slider( 
+                                                id="slider-snipp_upper", 
+                                                min=0, max=0.3, step=0.01, value=0, 
+                                                marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
+                                                ), 
+                                                html.Br(),                                            
+                                        ]),                   
+                                        # html.Img(id="live-image"),
+                                        # dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
+                                    ])
+                                ], color="success", inverse=True, outline=False)),
+                            ])
+                        ], width=6),# Ende Spalte2 Zeile 2
                     ])
-            ]),
+                ]),
 
 #########################
 # Tab 2: Messwerte
@@ -420,6 +491,7 @@ class SensorDashboard(DataLogger):
             Output("angle-display", "children"),
             Output("hue_lower", "children"),
             Output("hue_upper", "children"),
+            Output("cam_mode", "children"),
             Input("speed-slider", "value"),
             Input("angle-slider", "value"),
             Input("slider-hue_lower","value"),
@@ -429,9 +501,10 @@ class SensorDashboard(DataLogger):
             Input("slider-val_lower","value"),
             Input("slider-val_upper", "value"),            
             Input("slider-snipp_lower", "value"),
-            Input("slider-snipp_upper", "value")            
+            Input("slider-snipp_upper", "value"),
+            Input("slider-cam_mode", "value")            
         )
-        def update_values(speed, angle, hue_l, hue_u,sat_l,sat_u,val_l,val_u, snipp_l, snipp_u):
+        def update_values(speed, angle, hue_l, hue_u,sat_l,sat_u,val_l,val_u, snipp_l, snipp_u, cam_mode):
             self.car.speed = speed
             self.car.steering_angle = angle
             self.hue_l = hue_l
@@ -442,6 +515,7 @@ class SensorDashboard(DataLogger):
             self.val_u = val_u                        
             self.snipp_l = snipp_l
             self.snipp_u = snipp_u
+            self.cam_mode = cam_mode
             self.car.drive()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
@@ -459,34 +533,32 @@ class SensorDashboard(DataLogger):
             Input("btn-cam","n_clicks"),
             Input("btn-fil","n_clicks"),
             Input("btn-saveLog","n_clicks"),
-            Input("btn-save-filter","n_clicks"),
             prevent_initial_call=True
         )
         def handle_buttons(drive_clicks,
-                           stop_clicks,
-                           driveMode1_clicks,
-                           driveMode2_clicks,
-                           driveMode3_clicks,
-                           driveMode4_clicks,
-                           driveMode5_clicks,
-                           driveMode6_clicks,
-                           driveMode7_clicks,
-                           cam_clicks,
-                           fil_clicks,
-                           saveLog_clicks,
-                           saveFilter_clicks
-                           ):
+                        stop_clicks,
+                        driveMode1_clicks,
+                        driveMode2_clicks,
+                        driveMode3_clicks,
+                        driveMode4_clicks,
+                        driveMode5_clicks,
+                        driveMode6_clicks,
+                        driveMode7_clicks,
+                        cam_clicks,
+                        fil_clicks,
+                        saveLog_clicks
+                        ):
             ctx = dash.callback_context
             if not ctx.triggered:
                 return ""
             button_id = ctx.triggered[0]["prop_id"].split(".")[0]
             if button_id in ["btn-driveMode1",
-                             "btn-driveMode2",
-                             "btn-driveMode3",
-                             "btn-driveMode4",
-                             "btn-driveMode5",
-                             "btn-driveMode6",
-                             "btn-driveMode7",] and self.car.state != 'drive':
+                            "btn-driveMode2",
+                            "btn-driveMode3",
+                            "btn-driveMode4",
+                            "btn-driveMode5",
+                            "btn-driveMode6",
+                            "btn-driveMode7",] and self.car.state != 'drive':
                 return "Fahrbereitschaft über Fahren herstellen"
             elif button_id == "btn-drive":
                 self.car.state = 'ready'
@@ -546,16 +618,6 @@ class SensorDashboard(DataLogger):
                 return text
             elif button_id == "btn-saveLog":
                 self.car.save_logs()
-            elif button_id == "btn-save-filter":
-                car_config=self.car.read_config_json()
-                serial_number = self.car.get_pi_serial_number()
-                car_config[serial_number]["hue_threshold"] = [self.hue_l, self.hue_u]
-                car_config[serial_number]["sat_threshold"] = [self.sat_l, self.sat_u]
-                car_config[serial_number]["val_threshold"] = [self.val_l, self.val_u]
-                car_config[serial_number]["snipp_threshold"] = [self.snipp_l, self.snipp_u]
-                with open('./software/config.json','w') as f:
-                    json.dump(car_config, f, sort_keys=True, indent=4)
-
                 
             
 
@@ -622,14 +684,15 @@ class SensorDashboard(DataLogger):
             return [{"label": fname, "value": fname} for fname in self.available_logs]
         
     def run(self):
-        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=False, use_reloader=False) #lokale IP Adresse
+        self.app.run_server(host="0.0.0.0",  port=8050 ,debug=True, use_reloader=False) #lokale IP Adresse
         
 
 
 if __name__ == "__main__":
     # car = BaseCar()
     # car = SonicCar()
-    car = CamCar()
+    # car = CamCar()
+    car = OpenCVCar()
     # log = DataLogger(car)
     dashboard = SensorDashboard(car)
     
