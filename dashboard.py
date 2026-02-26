@@ -143,7 +143,7 @@ class SensorDashboard(DataLogger):
                                 html.H4(id="Messwert3", className="title"),
 
                                 html.Img(id="live-image"),
-                                dcc.Interval(id="cam-interval", interval=100, n_intervals=0)
+                                dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
                                 ])
                             ], color="success", inverse=True, outline=False), width=6),
                         dbc.Col(
@@ -579,7 +579,7 @@ class SensorDashboard(DataLogger):
         
         def update_image(n):
             if self.status_cam == True:
-                return "data:image/jpeg;base64," + self.latest_frame + self.latest_frame
+                return "data:image/jpeg;base64," + self.latest_frame
                 
             else:
                 return "assets/no_cam.jpg"
