@@ -13,6 +13,7 @@ class CamCar(SensorCar):
         self.img_hsv = None
         self.img_lined = None
         self.img_filtered = None
+        self.img_edges = None
         self.bottom = 0
         self.top = 0
         self.h = 0
@@ -60,17 +61,19 @@ class CamCar(SensorCar):
         # return self.camera.get_frame()
 
     @property
+    def image(self):
+        return self.img
+    
+    @property
+    def image_edges(self):
+        return self.img_edges
+
+    @property
     def image_filtered(self):
         if self.img_filtered is not None:
             return self.img_filtered
         else:
             return None
-
-    # def share_image(self):
-    #     if self.img is not None:
-    #         return self.img_filtered
-    #     else: 
-    #         return None
 
     def filtered_image(self):
         self.get_image()
@@ -85,27 +88,30 @@ class CamCar(SensorCar):
             self._img_filter["sat_u"], 
             self._img_filter["val_u"]
         ])
+        # pix = 2
+        # frame = [::pix,::pix,:]
 
         img_flt = cv2.inRange(self.img_hsv, lower_range, upper_range)
         img_flt = cv2.GaussianBlur(img_flt,(5,5),0)
         self.img_filtered = cv2.cvtColor(img_flt, cv2.COLOR_GRAY2BGR)
+
         self.bottom = self.h - int(self._img_filter["snipp_l"]*self.h)
         self.top = int(self._img_filter["snipp_u"]*self.h)
         self.img_flt_cropped = img_flt[self.top:self.bottom,:]
-        self.lined_image()
+
+        kernel = np.ones((2,2), dtype='uint8')
+        img_dil = cv2.dilate(self.img_flt_cropped, kernel, iterations = 1)
+        self.img_edges = cv2.Canny(img_dil, 50,150)
+
+        self.line_detection()
         return self.img
     
-    def lined_image(self):
-        # thd_upper = self.h - self.top
-        # thd_lower = self.h -self.bottom
-        # print("low, up: ", thd_lower,thd_upper)
+    def line_detection(self):
         max_lines = 10
         try:
             if self.img_flt_cropped is None:
                 return
-
-            edges = cv2.Canny(self.img_flt_cropped, 50,150)
-            lines = cv2.HoughLinesP(edges,1,np.pi/180,60, minLineLength=30, maxLineGap=15)
+            lines = cv2.HoughLinesP(self.img_edges,1,np.pi/180,60, minLineLength=30, maxLineGap=15)
 
             # print("lines: ", lines)
             img = self.img_flt_cropped.copy()
@@ -153,8 +159,8 @@ class CamCar(SensorCar):
         x1l,y1l,x2l,y2l = self.avg_left_line
         x1r,y1r,x2r,y2r = self.avg_right_line
 
-        dxl, dyr = x1l-x2l, y1l-y2l
-        angle_left = 90 + math.degrees(math.atan2(dxl,dyr))
+        dxl, dyl = x1l-x2l, y1l-y2l
+        angle_left = 90 + math.degrees(math.atan2(dxl,dyl))
         offset = ((x1l+x2l)/2) - img_center
         self.angle_left_corr = angle_left - offset * self._img_filter["fac_angle"]
         
@@ -162,11 +168,6 @@ class CamCar(SensorCar):
         angle_right = 180+math.degrees(math.atan2(dyr,dxr))
         offset = ((x1r+x2r)/2) - img_center
         self.angle_right_corr = angle_right + offset * self._img_filter["fac_angle"]
-        
-        
-
-        angle_corr_l = 90 - self.angle_left_corr
-        angle_corr_r = self.angle_right_corr - 90
 
         if self.left_det == True and self.right_det == True:
             angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2
@@ -188,16 +189,6 @@ class CamCar(SensorCar):
 
         elif self.left_det == False and self.right_det == False:
             self.speed = 0
-
-
-        # self.angle_tar_buf.append(angle_tar)
-
-        # if len(self.angle_tar_buf) > 30:
-        #     self.angle_tar_buf.pop(0)
-          
-        # angle_tar_buf_fil = np.mean(self.angle_tar_buf)  
-        # self.steering_angle = max(min(angle_tar_buf_fil, 135),45)
-        # self.steering_angle = max(min(angle_act + angle_corr_mean, 135),45)
 
         alpha = self.img_filter["fil_angle"]
 
