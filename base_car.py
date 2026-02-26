@@ -117,7 +117,6 @@ class BaseCar():
     def state(self,value):
         self._state = value
 
-
     def start_calibration(self, serial_number):
         print(f"Seriennummer: {serial_number} unbekannt. Starte Kalibrierung:\n ACHTUNG Bitte PiCAR anheben.")
         self.frontwheels.turn(90)
@@ -173,14 +172,16 @@ class BaseCar():
         new_config[serial_number]["min_wheel_speed"] = min_wheel_speed
         return new_config
 
+    def get_pi_serial_number(self) -> str:
+        REGEX = re.compile(r"^Serial\s+:\s+([0-9a-f]+)$", re.MULTILINE)
+        cpuinfo = Path("/proc/cpuinfo").read_text()
+        return REGEX.search(cpuinfo).group(1)
 
-    def read_config_json(self) -> None:
+    def read_config_json(self) -> dict:
         '''
         reads serial number of raspberry pi and imports the corresponding setting. Starts calibration cycle if PiCar is unkown.
         '''
-        REGEX = re.compile(r"^Serial\s+:\s+([0-9a-f]+)$", re.MULTILINE)
-        cpuinfo = Path("/proc/cpuinfo").read_text()
-        serial_number = REGEX.search(cpuinfo).group(1)
+        serial_number = self.get_pi_serial_number()
         with open('./software/config.json') as f:
             try:
                 config_file = json.load(f)
@@ -190,14 +191,18 @@ class BaseCar():
             new_config = self.start_calibration(serial_number)
             if new_config != None:
                 config_file.update(new_config)
-                with open('./software/config.json','w') as f:
-                    json.dump(config_file, f, sort_keys=True, indent=4)
+                self.write_config_json(config_file)
             else:
-                return
+                return config_file
 
         self.__turning_offset=config_file[serial_number]["turning_offset"]
         self.__min_wheel_speed=config_file[serial_number]["min_wheel_speed"]
-
+        return config_file
+    
+    def write_config_json(self, config_file):
+        with open('./software/config.json','w') as f:
+                    json.dump(config_file, f, sort_keys=True, indent=4)
+    
     def drive(self):
         '''
         leitet die Fahrbefehle an basisklassen weiter,
