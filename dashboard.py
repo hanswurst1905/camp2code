@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc, Output, Input, Dash, State, dash_table
+from dash import html, dcc, Output, Input, State, dash_table
 import dash_bootstrap_components as dbc
 # from base_car import DataLogger
 from datalogger import DataLogger
@@ -36,14 +36,7 @@ class SensorDashboard(DataLogger):
         self.ultrasonic_distance = 0
         self.drive_thread = None
         self.drive_distance = 0
-        self.hue_l = 0
-        self.hue_u = 255
-        self.sat_l = 0
-        self.sat_u = 255
-        self.val_l = 0
-        self.val_u = 255
-        self.snipp_l = 0
-        self.snipp_u = 0
+        self.cam_interval = 0.1
 
     def get_log(self):
         base_log = super().get_log()
@@ -76,11 +69,14 @@ class SensorDashboard(DataLogger):
     def _cam_worker(self):
         while self.status_cam:
             # frame = self.car.get_image()
-            frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
+            # frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
+            
+            frame = self.car.image_filtered
+
             if frame is not None:
-                _, buffer = cv2.imencode(".jpg", frame) 
+                _, buffer = cv2.imencode(".jpg", frame)
                 self.latest_frame = base64.b64encode(buffer).decode("utf-8") 
-                time.sleep(0.05)
+                time.sleep(self.cam_interval)
 
     def _setup_layout(self):
         self.app.layout = dbc.Container([
@@ -144,7 +140,10 @@ class SensorDashboard(DataLogger):
                             dbc.Card([
                                 dbc.CardHeader("Fahrzeugstatus"),
                                 dbc.CardBody([
-                                html.H4(id="Messwert3", className="title")
+                                html.H4(id="Messwert3", className="title"),
+
+                                html.Img(id="live-image"),
+                                dcc.Interval(id="cam-interval", interval=100, n_intervals=0)
                                 ])
                             ], color="success", inverse=True, outline=False), width=6),
                         dbc.Col(
@@ -157,8 +156,8 @@ class SensorDashboard(DataLogger):
                                         html.H4(id="hue_lower", className="card-title"),
                                         dcc.Slider( 
                                             id="slider-hue_lower",
-                                            min=0, max=179, step=1, value=90, 
-                                            marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
+                                            min=70, max=130, step=1, value=90, 
+                                            marks={70: "70", 80: "80", 90: "90",100: "100",110: "110",130: "130"}
                                             ), 
                                             html.Br(),
 
@@ -166,16 +165,16 @@ class SensorDashboard(DataLogger):
                                         html.H4(id="hue_upper", className="card-title"), 
                                         dcc.Slider( 
                                             id="slider-hue_upper", 
-                                            min=0, max=179, step=1, value=105, 
-                                            marks={0: "0", 35: "35", 70: "70",105: "105",140: "140",179: "179"} 
+                                            min=70, max=130, step=1, value=110, 
+                                            marks={70: "70", 80: "80", 90: "90",100: "100",110: "110",130: "130"} 
                                             ), 
                                             html.Br(),
 
                                         html.Label("Sat lower"),
                                         dcc.Slider( 
                                             id="slider-sat_lower", 
-                                            min=0, max=255, step=1, value=0, 
-                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
+                                            min=0, max=255, step=1, value=100, 
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
                                             ), 
                                             html.Br(),
 
@@ -190,7 +189,7 @@ class SensorDashboard(DataLogger):
                                         html.Label("Val lower"),
                                         dcc.Slider( 
                                             id="slider-val_lower", 
-                                            min=0, max=255, step=1, value=0, 
+                                            min=0, max=255, step=1, value=100, 
                                             marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
                                             ), 
                                             html.Br(),
@@ -205,22 +204,35 @@ class SensorDashboard(DataLogger):
                                         html.Label("Snipp lower"), 
                                         dcc.Slider( 
                                             id="slider-snipp_lower", 
-                                            min=0, max=0.3, step=0.01, value=0, 
+                                            min=0, max=0.3, step=0.01, value=0.18, 
                                             marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
                                             ), 
                                             html.Br(),
                                         html.Label("Snipp upper"), 
                                         dcc.Slider( 
                                             id="slider-snipp_upper", 
-                                            min=0, max=0.3, step=0.01, value=0, 
+                                            min=0, max=0.3, step=0.01, value=0.27, 
+                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
+                                            ), 
+                                            html.Br(),
+
+                                        html.Label("fac angle"), 
+                                        dcc.Slider( 
+                                            id="slider-fac_angle", 
+                                            min=0, max=0.3, step=0.01, value=0.17, 
+                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
+                                            ), 
+                                            html.Br(),
+
+                                        html.Label("fil angle"), 
+                                        dcc.Slider( 
+                                            id="slider-fil_angle", 
+                                            min=0, max=0.3, step=0.01, value=0.1, 
                                             marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
                                             ), 
                                             html.Br(),                                            
-
  ]),                                            
 
-                                    html.Img(id="live-image"),
-                                    dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
                                 ])
                             ], color="success", inverse=True, outline=False), width=6),
                     ])
@@ -357,15 +369,15 @@ class SensorDashboard(DataLogger):
         def update_values(n_intervals,interval_ms):
             speed = self.car.speed
             # if self.car.state == 'drive' and not self.car.logs.empty:
-            if not self.car.logs.empty:
-                if self.car.state == 'drive':
-                    self.write_log()
-                    self.drive_time = self.drive_time + interval_ms / 1000
-                    self.drive_distance = self.drive_distance + abs(self.car.speed) * 1/3.6
-                self.speed_mean = abs(self.car.logs["speed"]).mean()
-                self.speed_min = self.car.logs["speed"].min()
-                self.speed_max = self.car.logs["speed"].max()
-                speed=self.car.speed
+            # if not self.car.logs.empty:
+            #     if self.car.state == 'drive':
+            #         self.write_log()
+            #         self.drive_time = self.drive_time + interval_ms / 1000
+            #         self.drive_distance = self.drive_distance + abs(self.car.speed) * 1/3.6
+            #     self.speed_mean = abs(self.car.logs["speed"]).mean()
+            #     self.speed_min = self.car.logs["speed"].min()
+            #     self.speed_max = self.car.logs["speed"].max()
+            #     speed=self.car.speed
                 
             self.state = self.car.state
             self.ultrasonic_distance=self.car.get_safe_distance()
@@ -405,19 +417,25 @@ class SensorDashboard(DataLogger):
             Input("slider-val_lower","value"),
             Input("slider-val_upper", "value"),            
             Input("slider-snipp_lower", "value"),
-            Input("slider-snipp_upper", "value")            
+            Input("slider-snipp_upper", "value"),
+            Input("slider-fac_angle", "value"), 
+            Input("slider-fil_angle", "value"),          
         )
-        def update_values(speed, angle, hue_l, hue_u,sat_l,sat_u,val_l,val_u, snipp_l, snipp_u):
+        def update_values(speed, angle, hue_l, hue_u,sat_l,sat_u,val_l,val_u, snipp_l, snipp_u, fac_angle,fil_angle):
             self.car.speed = speed
             self.car.steering_angle = angle
-            self.hue_l = hue_l
-            self.hue_u = hue_u
-            self.sat_l = sat_l
-            self.sat_u = sat_u
-            self.val_l = val_l
-            self.val_u = val_u                        
-            self.snipp_l = snipp_l
-            self.snipp_u = snipp_u
+            self.car.img_filter = {
+                                "hue_l": hue_l,
+                                "hue_u": hue_u,
+                                "sat_l": sat_l,
+                                "sat_u": sat_u,
+                                "val_l": val_l,
+                                "val_u": val_u,
+                                "snipp_l": snipp_l,
+                                "snipp_u": snipp_u,
+                                "fac_angle": fac_angle,
+                                "fil_angle": fil_angle
+                                }
             self.car.drive()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
@@ -497,8 +515,8 @@ class SensorDashboard(DataLogger):
                 self.start_drive_thread(self.car.fahrmodus_6)
                 return 'Fahrmodus_6 gestartet'
             elif button_id == "btn-driveMode7":
-                # self.car.fahrmodus_7()
-                return 'under construction'
+                self.car.fahrmodus_cam()
+                return 'Fahrmodus 7 gestartet'
             elif button_id == "btn-cam":
                 if self.status_cam == True:
                     self.stop_cam_thread()
@@ -524,7 +542,7 @@ class SensorDashboard(DataLogger):
         @self.app.callback(
             Output("logging", "figure"),
             Input("value_checklist", "value"),
-            Input("interval-sync","n_intervals")
+            Input("interval-graph","n_intervals")
         )
         def update_graph(selected_metrics, n_intervals):
             if self.car.logs.empty:
@@ -561,7 +579,7 @@ class SensorDashboard(DataLogger):
         
         def update_image(n):
             if self.status_cam == True:
-                return "data:image/jpeg;base64," + self.latest_frame
+                return "data:image/jpeg;base64," + self.latest_frame + self.latest_frame
                 
             else:
                 return "assets/no_cam.jpg"
@@ -583,7 +601,7 @@ if __name__ == "__main__":
     # car = BaseCar()
     # car = SonicCar()
     car = CamCar()
-    # log = DataLogger(car)
+    log = DataLogger(car)
     dashboard = SensorDashboard(car)
     
     try:
