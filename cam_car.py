@@ -27,20 +27,41 @@ class CamCar(SensorCar):
         self.right_det =False
         self.ang_ofs_l = 0
         self.ang_ofs_r = 0
-        self._img_filter = {
-            "hue_l": 90,
-            "hue_u": 105,
-            "sat_l": 50,
-            "sat_u": 250,
-            "val_l": 0,
-            "val_u": 255,
-            "snipp_l": 0.2,
-            "snipp_u": 0.3,
-            "fac_angle": 0.18,
-            "fil_angle": 0.3
-        }
+        self.load_filter_values()
         self.angle_tar_buf = []
         self.steering_angle_filtered = 90
+
+    def load_filter_values(self):
+        car_config=self.read_config_json()
+        serial_number = self.get_pi_serial_number()
+
+        if "img_filter" in car_config[serial_number]:
+            self._img_filter = car_config[serial_number]["img_filter"]
+        else:
+            self._img_filter = {
+                "hue_l": 90,
+                "hue_u": 105,
+                "sat_l": 50,
+                "sat_u": 250,
+                "val_l": 0,
+                "val_u": 255,
+                "snipp_l": 0.2,
+                "snipp_u": 0.3,
+                "fac_angle": 0.18,
+                "fil_angle": 0.3,
+                "canny_l": 50,
+                "canny_u": 150,
+                "hough_line_treshold": 60,
+                "hough_line_line_minLineLength": 30,
+                "hough_line_maxLineGap": 15
+            }
+
+    
+    def export_cv_filters(self):
+        car_config=self.read_config_json()
+        serial_number = self.get_pi_serial_number()
+        car_config[serial_number]["img_filter"] = self._img_filter
+        self.write_config_json(car_config)
 
     @property
     def img_filter(self):
@@ -111,7 +132,9 @@ class CamCar(SensorCar):
         try:
             if self.img_flt_cropped is None:
                 return
-            lines = cv2.HoughLinesP(self.img_edges,1,np.pi/180,60, minLineLength=30, maxLineGap=15)
+
+            edges = cv2.Canny(self.img_flt_cropped, self._img_filter["canny_l"],self._img_filter["canny_u"])
+            lines = cv2.HoughLinesP(edges,1,np.pi/180, self._img_filter["hough_line_treshold"], minLineLength=self._img_filter["hough_line_line_minLineLength"], maxLineGap=self._img_filter["hough_line_maxLineGap"])
 
             # print("lines: ", lines)
             img = self.img_flt_cropped.copy()
@@ -220,3 +243,10 @@ class CamCar(SensorCar):
             if self.state == "stop":
                 print("CamCar Ende")
                 break
+
+def main():
+    car = CamCar()
+    car.export_cv_filters()
+
+if __name__ == "__main__":
+    main()

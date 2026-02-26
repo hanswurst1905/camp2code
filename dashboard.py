@@ -132,6 +132,7 @@ class SensorDashboard(DataLogger):
                         dbc.Col(dbc.Button("Fahrmodus_6", id="btn-driveMode6", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Fahrmodus_7", id="btn-driveMode7", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Kamerabild", id="btn-cam", color="warning", className="title"), width=2),
+                        dbc.Col(dbc.Button("CV Filter speichern", id="btn-save_cv_filter", color="warning", className="title"), width=2),
                 ]),
 
                 html.Div(style={"height":"30px"}),
@@ -156,79 +157,89 @@ class SensorDashboard(DataLogger):
                                         html.H4(id="hue_lower", className="card-title"),
                                         dcc.Slider( 
                                             id="slider-hue_lower",
-                                            min=70, max=130, step=1, value=90, 
-                                            marks={70: "70", 80: "80", 90: "90",100: "100",110: "110",130: "130"}
-                                            ), 
+                                            min=70, max=130, step=1, 
+                                            marks={70: "70", 80: "80", 90: "90",100: "100",110: "110",130: "130"},
+                                            value= self.car._img_filter["hue_l"]
+                                            ),
                                             html.Br(),
 
                                         html.Label("Hue upper"),
                                         html.H4(id="hue_upper", className="card-title"), 
                                         dcc.Slider(
                                             id="slider-hue_upper",
-                                            min=70, max=130, step=1, value=110, 
-                                            marks={70: "70", 80: "80", 90: "90",100: "100",110: "110",130: "130"} 
+                                            min=70, max=130, step=1, 
+                                            marks={70: "70", 80: "80", 90: "90",100: "100",110: "110",130: "130"},
+                                            value= self.car._img_filter["hue_u"]
                                             ), 
                                             html.Br(),
 
                                         html.Label("Sat lower"),
                                         dcc.Slider( 
                                             id="slider-sat_lower", 
-                                            min=0, max=255, step=1, value=100, 
-                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
+                                            min=0, max=255, step=1,
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"},
+                                            value= self.car._img_filter["sat_l"]
                                             ), 
                                             html.Br(),
 
                                         html.Label("Sat upper"), 
                                         dcc.Slider( 
                                             id="slider-sat_upper", 
-                                            min=0, max=255, step=1, value=255, 
-                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
+                                            min=0, max=255, step=1, 
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"},
+                                            value= self.car._img_filter["sat_u"]
                                             ), 
                                             html.Br(),                                            
 
                                         html.Label("Val lower"),
                                         dcc.Slider( 
                                             id="slider-val_lower", 
-                                            min=0, max=255, step=1, value=100, 
-                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"} 
+                                            min=0, max=255, step=1,
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"},
+                                            value= self.car._img_filter["val_l"]
                                             ), 
                                             html.Br(),
 
                                         html.Label("Val upper"), 
                                         dcc.Slider( 
                                             id="slider-val_upper", 
-                                            min=0, max=255, step=1, value=255, 
-                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"}
+                                            min=0, max=255, step=1,
+                                            marks={0: "0", 50: "50", 100: "100",150: "150",200: "200",255: "255"},
+                                            value= self.car._img_filter["val_l"]
                                             ), 
                                             html.Br(),
                                         html.Label("Snipp lower"), 
                                         dcc.Slider( 
                                             id="slider-snipp_lower", 
-                                            min=0, max=0.3, step=0.01, value=0.18, 
-                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
+                                            min=0, max=0.3, step=0.01,
+                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"},
+                                            value= self.car._img_filter["snipp_l"] 
                                             ), 
                                             html.Br(),
                                         html.Label("Snipp upper"), 
                                         dcc.Slider( 
                                             id="slider-snipp_upper", 
-                                            min=0, max=0.3, step=0.01, value=0.27, 
-                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
+                                            min=0, max=0.3, step=0.01,
+                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"},
+                                            value= self.car._img_filter["snipp_u"]  
                                             ), 
                                             html.Br(),
 
                                         html.Label("fac angle"), 
                                         dcc.Slider( 
                                             id="slider-fac_angle", 
-                                            min=0, max=0.3, step=0.01, value=0.17, 
-                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
+                                            min=0, max=0.3, step=0.01,
+                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"},
+                                            value= self.car._img_filter["fac_angle"]
                                             ), 
                                             html.Br(),
 
                                         html.Label("fil angle"), 
                                         dcc.Slider( 
                                             id="slider-fil_angle", 
-                                            min=0, max=0.3, step=0.01, value=0.1, 
-                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"} 
+                                            min=0, max=0.3, step=0.01,
+                                            marks={0: "0", 0.15: "0.15", "0.3": "0.3"},
+                                            value= self.car._img_filter["fil_angle"]
                                             ), 
                                             html.Br(),                                            
  ]),                                            
@@ -424,18 +435,19 @@ class SensorDashboard(DataLogger):
         def update_values(speed, angle, hue_l, hue_u,sat_l,sat_u,val_l,val_u, snipp_l, snipp_u, fac_angle,fil_angle):
             self.car.speed = speed
             self.car.steering_angle = angle
-            self.car.img_filter = {
-                                "hue_l": hue_l,
-                                "hue_u": hue_u,
-                                "sat_l": sat_l,
-                                "sat_u": sat_u,
-                                "val_l": val_l,
-                                "val_u": val_u,
-                                "snipp_l": snipp_l,
-                                "snipp_u": snipp_u,
-                                "fac_angle": fac_angle,
-                                "fil_angle": fil_angle
-                                }
+            img_filter = self.car.img_filter
+            img_filter["hue_l"] = hue_l
+            img_filter["hue_u"] = hue_u
+            img_filter["sat_l"] = sat_l
+            img_filter["sat_u"] = sat_u
+            img_filter["val_l"] = val_l
+            
+            img_filter["val_u"] = val_u
+            img_filter["snipp_l"] = snipp_l
+            img_filter["snipp_u"] = snipp_u
+            img_filter["fac_angle"] = fac_angle
+            img_filter["fil_angle"] = fil_angle
+            self.car.img_filter = img_filter
             self.car.drive()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"
 
@@ -452,6 +464,7 @@ class SensorDashboard(DataLogger):
             Input("btn-driveMode7","n_clicks"),
             Input("btn-cam","n_clicks"),
             Input("btn-saveLog","n_clicks"),
+            Input("btn-save_cv_filter","n_clicks"),
             prevent_initial_call=True
         )
         def handle_buttons(drive_clicks,
@@ -464,7 +477,8 @@ class SensorDashboard(DataLogger):
                            driveMode6_clicks,
                            driveMode7_clicks,
                            cam_clicks,
-                           saveLog_clicks
+                           saveLog_clicks,
+                           saveCV_filter
                            ):
             ctx = dash.callback_context
             if not ctx.triggered:
@@ -527,6 +541,8 @@ class SensorDashboard(DataLogger):
                 return text
             elif button_id == "btn-saveLog":
                 self.car.save_logs()
+            elif button_id == "btn-save_cv_filter":
+                self.car.export_cv_filters()
                 
             
 

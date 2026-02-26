@@ -36,6 +36,18 @@
     "10000000e295ae03": {
         "forward_A": 0,
         "forward_B": 0,
+        "img_filter": {
+            "fac_angle": 0.18,
+            "fil_angle": 0.3,
+            "hue_l": 108,
+            "hue_u": 105,
+            "sat_l": 50,
+            "sat_u": 250,
+            "snipp_l": 0.2,
+            "snipp_u": 0.3,
+            "val_l": 0,
+            "val_u": 0
+        },
         "infrared_calibrated_reference_0": 74.5,
         "infrared_calibrated_reference_1": 87.0,
         "infrared_calibrated_reference_2": 89.5,
