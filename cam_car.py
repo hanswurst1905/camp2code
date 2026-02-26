@@ -138,7 +138,7 @@ class CamCar(SensorCar):
                         #     # print("right_line: ", self.right_line)
                         #     break
                     # cv2.line(self.img,(x1,y1+self.top),(x2,y2+self.top),(0,255,255),2)
-                self.avg_left_line = np.mean(self.left_line, axis=0).astype(int)
+                self.avg_left_line = np.mean(self.left_line, axis=0).astype(int) #mittelwert statt median, da der median tanzt
                 self.avg_left_line = self.avg_left_line.tolist()
                 self.avg_right_line = np.mean(self.right_line, axis=0).astype(int)
                 self.avg_right_line = self.avg_right_line.tolist()
