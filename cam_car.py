@@ -26,20 +26,35 @@ class CamCar(SensorCar):
         self.right_det =False
         self.ang_ofs_l = 0
         self.ang_ofs_r = 0
-        self._img_filter = {
-            "hue_l": 90,
-            "hue_u": 105,
-            "sat_l": 50,
-            "sat_u": 250,
-            "val_l": 0,
-            "val_u": 255,
-            "snipp_l": 0.2,
-            "snipp_u": 0.3,
-            "fac_angle": 0.18,
-            "fil_angle": 0.3
-        }
+        self.load_filter_values()
         self.angle_tar_buf = []
         self.steering_angle_filtered = 90
+
+        def load_filter_values(self):
+            car_config=self.read_config_json()
+            serial_number = self.get_pi_serial_number()
+
+            if "img_filter" in car_config[serial_number]:
+                self._img_filter = car_config[serial_number]["img_filter"]
+            else:
+                self._img_filter = {
+                    "hue_l": 90,
+                    "hue_u": 105,
+                    "sat_l": 50,
+                    "sat_u": 250,
+                    "val_l": 0,
+                    "val_u": 255,
+                    "snipp_l": 0.2,
+                    "snipp_u": 0.3,
+                    "fac_angle": 0.18,
+                    "fil_angle": 0.3,
+                    "canny_l": 50,
+                    "canny_u": 150,
+                    "hough_line_treshold": 60,
+                    "hough_line_line_minGap": 60,
+                    "hough_line_treshold": 60
+                }
+            
 
     @property
     def img_filter(self):
