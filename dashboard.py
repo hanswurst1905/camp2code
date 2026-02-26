@@ -163,8 +163,8 @@ class SensorDashboard(DataLogger):
 
                                         html.Label("Hue upper"),
                                         html.H4(id="hue_upper", className="card-title"), 
-                                        dcc.Slider( 
-                                            id="slider-hue_upper", 
+                                        dcc.Slider(
+                                            id="slider-hue_upper",
                                             min=70, max=130, step=1, value=110, 
                                             marks={70: "70", 80: "80", 90: "90",100: "100",110: "110",130: "130"} 
                                             ), 
