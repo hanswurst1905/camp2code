@@ -151,10 +151,8 @@ class CamCar(SensorCar):
                             self.left_line.append(line[0])
                     elif x2 > self.w * 0.6 and x1 > self.w * 0.4: #right side line
                         self.right_det = True
-                        print("right det: ", self.right_det)
                         if len(self.right_line) < max_lines:
                             self.right_line.append(line[0])
-                print("l det, r_det:", self.left_det, self.right_det)
                 # mean calculation
                 if len(self.left_line) > 0:
                     self.avg_left_line = np.mean(self.left_line, axis=0).astype(int) #mittelwert statt median, da der median tanzt
@@ -172,9 +170,19 @@ class CamCar(SensorCar):
                     if line is not None and len(line) == 4:
                         x1,y1,x2,y2 = line
                         cv2.line(self.img_filtered,(x1,y1+self.top),(x2,y2+self.top),(0,150,255),2)
-                print("eins vor calc_steering")
                 self.calc_steering_angle_lr()
-                print("calc steering aufgerufen")
+                #Lenkwinkel einzeichnen
+                
+                cv2.putText(
+                    img=self.image_filtered,
+                    text=str(int(self.steering_angle_filtered)),
+                    org=(10,480),
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale=2,
+                    color=(0,150,255),
+                    thickness=2,
+                    lineType = cv2.LINE_AA
+                )
             self.img_lined = img
 
         except Exception as e:
