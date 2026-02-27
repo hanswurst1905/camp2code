@@ -33,6 +33,9 @@ class CamCar(SensorCar):
         self.load_filter_values()
         self.angle_tar_buf = []
         self.steering_angle_filtered = 90
+        self.save_images = False
+        self._save_time_interval = datetime.timedelta(seconds=1) #s
+        self.save_time = None
 
     def load_filter_values(self):
         car_config=self.read_config_json()
@@ -86,14 +89,21 @@ class CamCar(SensorCar):
         return self.img
 
     def save_image(self):
-        now = datetime.datetime.now()
-        timestamp = now.strftime("%Y-%m-%d_%H:%M:%S") + f".{int(now.microsecond/1000):03d}"
-        serial_number = self.get_pi_serial_number()
-        ang = self.steering_angle
-        folder = "pictures"
-        os.makedirs(folder,exist_ok=True)
-        fn = os.path.join("pictures",f'{timestamp}_{serial_number}_{int(ang)}.jpg')
-        cv2.imwrite(fn,self.img_raw)
+        if self.save_images == True:
+            if self.save_time == None:
+                self.save_time = datetime.datetime.now()
+            time = datetime.datetime.now()
+            if time - self.save_time >= self._save_time_interval:
+                now = datetime.datetime.now()
+                timestamp = now.strftime("%Y-%m-%d_%H:%M:%S") + f".{int(now.microsecond/1000):03d}"
+                serial_number = self.get_pi_serial_number()
+                ang = self.steering_angle
+                spd = self.speed
+                folder = "pictures"
+                os.makedirs(folder,exist_ok=True)
+                fn = os.path.join("pictures",f'{timestamp}_{serial_number}_{int(spd)}_{int(ang)}.jpg')
+                cv2.imwrite(fn,self.img_raw)
+                self.save_time = datetime.datetime.now()
 
     @property
     def image(self):
@@ -149,12 +159,12 @@ class CamCar(SensorCar):
                 return
             lines = cv2.HoughLinesP(self.img_edges,1,np.pi/180, self._img_filter["hough_line_treshold"], minLineLength=self._img_filter["hough_line_line_minLineLength"], maxLineGap=self._img_filter["hough_line_maxLineGap"])
 
-            print("lines: ", lines)
+            # print("lines: ", lines)
             img = self.img_flt_cropped.copy()
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
             if lines is not None:
-                self.avg_right_line, self.avg_left_line, self.right_line, self.left_line = [],[], [], []
+                self.avg_right_line, self.avg_left_line, self.right_line, self.left_line = [], [], [], []
                 self.left_det, self.right_det = False, False
                 for line in lines:
                     if line[0] is None or len(line[0]) != 4:
@@ -169,7 +179,7 @@ class CamCar(SensorCar):
                         self.right_det = True
                         if len(self.right_line) < max_lines:
                             self.right_line.append(line[0])
-                            print("rl: ", self.right_line)
+                            # print("rl: ", self.right_line)
                 # mean calculation
                 if len(self.left_line) > 0:
                     self.avg_left_line = np.mean(self.left_line, axis=0).astype(int) #mittelwert statt median, da der median tanzt
@@ -206,11 +216,36 @@ class CamCar(SensorCar):
             print(f'Fehler aufgetreten:{e}')
 
 
+    def merge_lines(self, lines):
+        # lines = [[x1,y1,x2,y2], ...]
+
+        points = []
+        for x1, y1, x2, y2 in lines:
+            points.append([x1, y1])
+            points.append([x2, y2])
+
+        points = np.array(points)
+
+        xs = points[:,0]
+        ys = points[:,1]
+
+        # Regression
+        m, b = np.polyfit(xs, ys, 1)
+
+        # Linie über den gesamten y‑Bereich
+        y_min = int(np.min(ys))
+        y_max = int(np.max(ys))
+
+        x_min = int((y_min - b) / m)
+        x_max = int((y_max - b) / m)
+
+        return [x_min, y_min, x_max, y_max]
+
 
     def calc_steering_angle_lr(self):
         x1l,y1l,x2l,y2l,x1r,y1r,x2r,y2r = 0,0,0,0,0,0,0,0
         img_center = self.w / 2
-        
+        offset_step, offset_max = 0.75, 15
         if self.left_det == True:
             x1l,y1l,x2l,y2l = self.avg_left_line
             dxl, dyl = x1l-x2l, y1l-y2l
@@ -235,18 +270,18 @@ class CamCar(SensorCar):
             self.ang_ofs_l, self.ang_ofs_r = 0, 0
 
         if self.left_det == True:
-            # if x1l <= 100 and y1l >= 350:
-            #     self.ang_ofs_l = max(self.ang_ofs_l - 1, -15)
-            # elif x1l > 100 and y1l < 350 :
-            #     self.ang_ofs_l = min(self.ang_ofs_l + 1, 15)
+            if x1l <= 150 and y1l >= 350:
+                self.ang_ofs_l = max(self.ang_ofs_l - offset_step, -offset_max)
+            elif x1l > 150 and y1l < 350 :
+                self.ang_ofs_l = min(self.ang_ofs_l + offset_step, offset_max)
             angle_tar = 180 - self.angle_left_corr + self.ang_ofs_l
             # angle_tar = 180 - self.angle_left_corr
 
         if self.right_det == True:
-            # if x2r >= 540 and y2r >= 350:
-            #     self.ang_ofs_r = min(self.ang_ofs_r + 1, 15)
-            # elif x2r < 540 and y2r < 350:
-            #     self.ang_ofs_r = max(self.ang_ofs_r - 1, -15)
+            if x2r >= 490 and y2r >= 350:
+                self.ang_ofs_r = min(self.ang_ofs_r + offset_step, offset_max)
+            elif x2r < 490 and y2r < 350:
+                self.ang_ofs_r = max(self.ang_ofs_r - offset_step, -offset_max)
             angle_tar = self.angle_right_corr + self.ang_ofs_r
             # angle_tar = self.angle_right_corr
 
@@ -275,18 +310,13 @@ class CamCar(SensorCar):
         self.steering_angle_filtered = max(min(self.steering_angle_filtered, 135), 45)
         self.steering_angle = self.steering_angle_filtered
 
-        print("left_det, right_det: ", self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, angle_tar, x1l, x2r)
+        # print("left_det, right_det: ", self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, angle_tar, x1l, x2r)
 
            
     def fahrmodus_cam(self):
-        time0 = datetime.datetime.now()
-        save_time_interval = datetime.timedelta(seconds=1) #s
         while True:
-            time1 = datetime.datetime.now()
             self.filtered_image()
-            if time1 - time0 >= save_time_interval:
-                self.save_image()
-                time0 = time1
+            self.save_image()
             if self.state == "stop":
                 print("CamCar Ende")
                 break
