@@ -12,6 +12,7 @@
             "canny_l": 50,
             "canny_u": 150,
             "fac_angle": 0.19,
+            "fac_h_fummel": 1,
             "fil_angle": 0.3,
             "hough_line_line_minLineLength": 30,
             "hough_line_maxLineGap": 15,
@@ -23,8 +24,7 @@
             "snipp_l": 0.15,
             "snipp_u": 0.3,
             "val_l": 100,
-            "val_u": 255,
-            "fac_h_fummel": 1
+            "val_u": 255
         },
         "infrared_calibrated_reference_0": 74.5,
         "infrared_calibrated_reference_1": 87.0,

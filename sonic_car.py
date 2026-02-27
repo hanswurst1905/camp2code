@@ -89,18 +89,18 @@ class SonicCar(BaseCar): # Beschreibt die Klasse "SonicCar"
         self.drive()
         print("Fahrzeug gestoppt, Hindernis erkannt")
 
-    def fahrmodus_4(self, init_speed = 35, steering_angle = 90):
-        """
-        PiCar fährt im leereen Raum und versucht Hindernisse zu umfahren. 
-        """
-        while True:
-            self.fahrmodus_3(init_speed,steering_angle)
-            self.steering_angle = 45
-            self.speed = -30
-            if self.state in ['ready','drive']: self.drive()
-            time.sleep(2)
-            self.speed = 0
-            if self.state == 'stop': break
+    # def fahrmodus_4(self, init_speed = 35, steering_angle = 90):
+    #     """
+    #     PiCar fährt im leereen Raum und versucht Hindernisse zu umfahren. 
+    #     """
+    #     while True:
+    #         self.fahrmodus_3(init_speed,steering_angle)
+    #         self.steering_angle = 45
+    #         self.speed = -30
+    #         if self.state in ['ready','drive']: self.drive()
+    #         time.sleep(2)
+    #         self.speed = 0
+    #         if self.state == 'stop': break
 
 def menue():
     menue_data = [

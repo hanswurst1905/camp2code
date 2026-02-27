@@ -3,6 +3,8 @@ from sensor_car import*
 import cv2
 import numpy as np
 import math
+import datetime 
+import os
 
 class CamCar(SensorCar):
     def __init__(self):
@@ -10,6 +12,7 @@ class CamCar(SensorCar):
         self.camera = Camera()
         self.img_flt_cropped = None
         self.img = None
+        self.img_raw = None
         self.img_hsv = None
         self.img_lined = None
         self.img_filtered = None
@@ -77,9 +80,20 @@ class CamCar(SensorCar):
 
     def get_image(self):
         self.img = self.camera.get_frame()
+        self.img_raw = self.img.copy()
         self.h, self.w = self.img.shape[:2]
         self.img_hsv = cv2.cvtColor(self.img,cv2.COLOR_BGR2HSV)
         return self.img
+
+    def save_image(self):
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y-%m-%d_%H:%M:%S") + f".{int(now.microsecond/1000):03d}"
+        serial_number = self.get_pi_serial_number()
+        ang = self.steering_angle
+        folder = "pictures"
+        os.makedirs(folder,exist_ok=True)
+        fn = os.path.join("pictures",f'{timestamp}_{serial_number}_{int(ang)}.jpg')
+        cv2.imwrite(fn,self.img_raw)
 
     @property
     def image(self):
@@ -119,6 +133,7 @@ class CamCar(SensorCar):
         self.bottom = self.h - int(self._img_filter["snipp_l"]*self.h)
         self.top = int(self._img_filter["snipp_u"]*self.h)
         self.img_flt_cropped = img_flt[self.top:self.bottom,:]
+        self.h_c, self.w_c = self.img_flt_cropped.shape[:2]
 
         kernel = np.ones((2,2), dtype='uint8')
         img_dil = cv2.dilate(self.img_flt_cropped, kernel, iterations = 1)
@@ -154,6 +169,7 @@ class CamCar(SensorCar):
                         self.right_det = True
                         if len(self.right_line) < max_lines:
                             self.right_line.append(line[0])
+                            print("rl: ", self.right_line)
                 # mean calculation
                 if len(self.left_line) > 0:
                     self.avg_left_line = np.mean(self.left_line, axis=0).astype(int) #mittelwert statt median, da der median tanzt
@@ -200,7 +216,7 @@ class CamCar(SensorCar):
             dxl, dyl = x1l-x2l, y1l-y2l
             angle_left = 180 - math.degrees(math.atan2(dyl,dxl))
             offset = ((x1l+x2l)/2) - img_center
-            fac_h = ((abs(y1l-y2l)) / self.h ) * self._img_filter["fac_h_fummel"] # 0...2
+            fac_h = ((abs(y1l-y2l)) / self.h_c ) * self._img_filter["fac_h_fummel"] # 0...2
             # self.angle_left_corr = angle_left - offset * self._img_filter["fac_angle"] # 112-90= 22*0,5 = 11 = 101, 11  
             self.angle_left_corr = (angle_left - offset * self._img_filter["fac_angle"] - 90) * fac_h + 90 # 70-90=-20*0.5=-10+90=80
 
@@ -210,7 +226,7 @@ class CamCar(SensorCar):
             dxr, dyr = x1r-x2r, y1r-y2r
             angle_right = 180+math.degrees(math.atan2(dyr,dxr))
             offset = ((x1r+x2r)/2) - img_center
-            fac_h = ((abs(y1r-y2r)) / self.h) * self._img_filter["fac_h_fummel"] # 0...2
+            fac_h = ((abs(y1r-y2r)) / self.h_c) * self._img_filter["fac_h_fummel"] # 0...2
             # self.angle_right_corr = angle_right + offset * self._img_filter["fac_angle"]
             self.angle_right_corr = (angle_right + offset * self._img_filter["fac_angle"] - 90) * fac_h + 90
 
@@ -263,8 +279,14 @@ class CamCar(SensorCar):
 
            
     def fahrmodus_cam(self):
+        time0 = datetime.datetime.now()
+        save_time_interval = datetime.timedelta(seconds=1) #s
         while True:
+            time1 = datetime.datetime.now()
             self.filtered_image()
+            if time1 - time0 >= save_time_interval:
+                self.save_image()
+                time0 = time1
             if self.state == "stop":
                 print("CamCar Ende")
                 break

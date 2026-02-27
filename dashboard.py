@@ -399,7 +399,7 @@ class SensorDashboard(DataLogger):
             #     speed=self.car.speed
                 
             self.state = self.car.state
-            self.ultrasonic_distance=self.car.get_safe_distance()
+            # self.ultrasonic_distance=self.car.get_safe_distance()
 
             return(
                 html.Div(

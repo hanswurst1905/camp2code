@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 import threading
 from datalogger import DataLogger
+import pygame
 
 class BaseCar():
     '''
@@ -257,7 +258,32 @@ class BaseCar():
         pass
 
     def fahrmodus_4(self):
-        pass
+
+        self.steering_angle = 90
+        self.speed = 0
+        print("fahrmodus4, state", self.state)
+        pygame.init() 
+        pygame.display.set_mode((1,1)) # Dummy-Fenster für Event-System 
+        print("Keyboard-Steuerung aktiv (W/S = Geschwindigkeit, A/D = Lenken, Q = Stop")
+
+        clock = pygame.time.Clock()
+              
+        while self.state == "drive":
+            pygame.event.pump()
+            keys = pygame.key.get_pressed()
+            
+            if keys[pygame.K_a]:
+                self.steering_angle -= 5
+            if keys[pygame.K_d]:
+                self.steering_angle += 5
+            if keys[pygame.K_w]:
+                self.speed += 5
+            if keys[pygame.K_s]:
+                self.speed -= 5
+            if keys[pygame.K_q]:
+                self.stop()
+                break
+            clock.tick(30)
 
     def fahrmodus(self,selection):
         '''
@@ -274,7 +300,7 @@ class BaseCar():
                 speed_lst = [40,40,-40,-40]
                 angle_lst = [90,135,135,90]
                 time_sleep = [1,8,8,1]
-            elif selection == '3': #Fahrmodus3 konfigirierbar über drive_mode.csv
+            elif selection == '3': #Fahrmodus3 konfigurierbar über drive_mode.csv
                 df = pd.read_csv("drive_mode.csv",comment='#')
                 speed_lst = df["speed"].tolist()
                 angle_lst = df["steering_angle"].tolist()
