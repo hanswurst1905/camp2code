@@ -240,7 +240,16 @@ class SensorDashboard(DataLogger):
                                             marks={0: "0", 0.15: "0.15", "0.3": "0.3"},
                                             value= self.car._img_filter["fil_angle"]
                                             ), 
-                                            html.Br(),                                            
+                                            html.Br(),                   
+
+                                        html.Label("fac h fummel"), 
+                                        dcc.Slider( 
+                                            id="slider-fac_h_fummel", 
+                                            min=0, max=3, step=0.1,
+                                            marks={0: "0", 1:"1",2:"2", "3": "3"},
+                                            value= self.car._img_filter["fac_h_fummel"]
+                                            ), 
+                                            html.Br(),                                                                     
  ]),                                            
 
                                 ])
@@ -429,9 +438,10 @@ class SensorDashboard(DataLogger):
             Input("slider-snipp_lower", "value"),
             Input("slider-snipp_upper", "value"),
             Input("slider-fac_angle", "value"), 
-            Input("slider-fil_angle", "value"),          
+            Input("slider-fil_angle", "value"),
+            Input("slider-fac_h_fummel", "value"),          
         )
-        def update_values(speed, angle, hue_l, hue_u,sat_l,sat_u,val_l,val_u, snipp_l, snipp_u, fac_angle,fil_angle):
+        def update_values(speed, angle, hue_l, hue_u,sat_l,sat_u,val_l,val_u, snipp_l, snipp_u, fac_angle,fil_angle, fac_h_fummel):
             self.car.speed = speed
             self.car.steering_angle = angle
             img_filter = self.car.img_filter
@@ -446,6 +456,7 @@ class SensorDashboard(DataLogger):
             img_filter["snipp_u"] = snipp_u
             img_filter["fac_angle"] = fac_angle
             img_filter["fil_angle"] = fil_angle
+            img_filter["fac_h_fummel"] = fac_h_fummel
             self.car.img_filter = img_filter
             self.car.drive()
             return f"{self.car.speed} km/h", f"{self.car.steering_angle} °"

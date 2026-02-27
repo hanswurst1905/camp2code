@@ -53,7 +53,8 @@ class CamCar(SensorCar):
                 "canny_u": 150,
                 "hough_line_treshold": 30,
                 "hough_line_line_minLineLength": 30,
-                "hough_line_maxLineGap": 30
+                "hough_line_maxLineGap": 30,
+                "fac_h_fummel": 1
             }
 
     
@@ -199,32 +200,37 @@ class CamCar(SensorCar):
             dxl, dyl = x1l-x2l, y1l-y2l
             angle_left = 180 - math.degrees(math.atan2(dyl,dxl))
             offset = ((x1l+x2l)/2) - img_center
-            self.angle_left_corr = angle_left - offset * self._img_filter["fac_angle"]
+            fac_h = ((abs(y1l-y2l)) / self.h ) * self._img_filter["fac_h_fummel"] # 0...2
+            # self.angle_left_corr = angle_left - offset * self._img_filter["fac_angle"] # 112-90= 22*0,5 = 11 = 101, 11  
+            self.angle_left_corr = (angle_left - offset * self._img_filter["fac_angle"] - 90) * fac_h + 90 # 70-90=-20*0.5=-10+90=80
+
 
         if self.right_det == True:
             x1r,y1r,x2r,y2r = self.avg_right_line
             dxr, dyr = x1r-x2r, y1r-y2r
             angle_right = 180+math.degrees(math.atan2(dyr,dxr))
             offset = ((x1r+x2r)/2) - img_center
-            self.angle_right_corr = angle_right + offset * self._img_filter["fac_angle"]
+            fac_h = ((abs(y1r-y2r)) / self.h) * self._img_filter["fac_h_fummel"] # 0...2
+            # self.angle_right_corr = angle_right + offset * self._img_filter["fac_angle"]
+            self.angle_right_corr = (angle_right + offset * self._img_filter["fac_angle"] - 90) * fac_h + 90
 
         if self.left_det == True and self.right_det == True:
             angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2
             self.ang_ofs_l, self.ang_ofs_r = 0, 0
 
         if self.left_det == True:
-            if x1l <= 100 and y1l >= 350:
-                self.ang_ofs_l = max(self.ang_ofs_l - 1, -15)
-            elif x1l > 100 and y1l < 350 :
-                self.ang_ofs_l = min(self.ang_ofs_l + 1, 15)
+            # if x1l <= 100 and y1l >= 350:
+            #     self.ang_ofs_l = max(self.ang_ofs_l - 1, -15)
+            # elif x1l > 100 and y1l < 350 :
+            #     self.ang_ofs_l = min(self.ang_ofs_l + 1, 15)
             angle_tar = 180 - self.angle_left_corr + self.ang_ofs_l
             # angle_tar = 180 - self.angle_left_corr
 
         if self.right_det == True:
-            if x2r >= 540 and y2r >= 350:
-                self.ang_ofs_r = min(self.ang_ofs_r + 1, 15)
-            elif x2r < 540 and y2r < 350:
-                self.ang_ofs_r = max(self.ang_ofs_r - 1, -15)
+            # if x2r >= 540 and y2r >= 350:
+            #     self.ang_ofs_r = min(self.ang_ofs_r + 1, 15)
+            # elif x2r < 540 and y2r < 350:
+            #     self.ang_ofs_r = max(self.ang_ofs_r - 1, -15)
             angle_tar = self.angle_right_corr + self.ang_ofs_r
             # angle_tar = self.angle_right_corr
 

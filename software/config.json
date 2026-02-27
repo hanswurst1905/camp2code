@@ -23,7 +23,8 @@
             "snipp_l": 0.15,
             "snipp_u": 0.3,
             "val_l": 100,
-            "val_u": 255
+            "val_u": 255,
+            "fac_h_fummel": 1
         },
         "infrared_calibrated_reference_0": 74.5,
         "infrared_calibrated_reference_1": 87.0,
