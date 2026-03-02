@@ -6,8 +6,7 @@ from datalogger import DataLogger
 import plotly.express as px
 from sonic_car import*
 # from sensor_car import SensorCar
-from opencv_car import (OpenCVCar)
-# from opencv_car import OpenCVCar
+from cam_car import CamCar
 import threading
 import os
 import pandas as pd
@@ -18,7 +17,6 @@ class SensorDashboard(DataLogger):
     def __init__(self,car):
         super().__init__(car)
         self.status_cam = False
-        self.status_fil = False
         self.cam_thread = None
         self.latest_frame = None
         self.car = car
@@ -37,7 +35,7 @@ class SensorDashboard(DataLogger):
         self.ultrasonic_distance = 0
         self.drive_thread = None
         self.drive_distance = 0
-        self.cam_interval = 0.1
+        self.cam_interval = 0.05
 
     def get_log(self):
         base_log = super().get_log()
@@ -73,6 +71,7 @@ class SensorDashboard(DataLogger):
             # frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
             
             frame = self.car.image_filtered
+            #frame = self.car.image_edges
 
             if frame is not None:
                 _, buffer = cv2.imencode(".jpg", frame)
@@ -80,62 +79,14 @@ class SensorDashboard(DataLogger):
                 time.sleep(self.cam_interval)
 
     def _setup_layout(self):
-        show = 0
         self.app.layout = dbc.Container([
             html.H2("PiCar Dashboard", className="text-center my-4"),
 
             dbc.Tabs([
-                dbc.Tab(label="Test", tab_id="tab-steuerung", children=[
-                    dbc.Row([#Zeile1
-                        dbc.Col([dbc.FormText("Zeile 1, Spalte 1") if show else None,# Spalte 1
-                                        html.Div(style={"height": "10px"}),
-                                        html.Div(html.Img(src="/video_stream")),                            
-                                        html.Div(style={"height": "10px"}),
-                                        dbc.Card([
-                                            dbc.CardHeader("Cam"),
-                                            dbc.CardBody([
-                                                html.Label("Cam Mode"),
-                                                dcc.Slider(
-                                                id="slider-cam_mode",
-                                                min=0,
-                                                max=2,
-                                                step=1,
-                                                value=0,
-                                                marks={0: "raw", 1: "resized", 2: "prep"})
-                                            ])
-                                        ], color="info", inverse=True),
-                                   
-                            dbc.Row([#Zeile2
-                                dbc.Col([ dbc.FormText("Z2C1") if show else None ]),
-                                dbc.Col([ dbc.FormText("Z2C2") if show else None ]),
-                                dbc.Col([ dbc.FormText("Z2C3") if show else None ]),
-                            ]),
-                            dbc.Row([#Zeile3
-                                dbc.Col([ dbc.FormText("Z3C1") if show else None ]),
-                                dbc.Col([ dbc.FormText("Z3C2") if show else None ]),
-                                dbc.Col([ dbc.FormText("Z3C3") if show else None ]),
-                            ])
-                        ]),
-                        dbc.Col([# Spalte 2
-                            dbc.Row([#Zeile2
-                                html.Div(style={"height": "10px"}),
-                                html.Div(html.Img(src="/video_stream")),
-                                dbc.Col([ dbc.FormText("Z2C2") if show else None ]),
-                                dbc.Col([ dbc.FormText("Z2C3") if show else None ]),
-                                dbc.Col([ dbc.FormText("Z2C4") if show else None ]),
-                            ]),
-                            dbc.Row([#Zeile3
-                                dbc.Col([ dbc.FormText("Z3C2") if show else None ]),
-                                dbc.Col([ dbc.FormText("Z3C3") if show else None ]),
-                                dbc.Col([ dbc.FormText("Z3C4") if show else None ]),
-                            ])                            
-                        ])
-                    ])
-                ]),
 #################
 # Tab 1: Fahren
 #################
-                dbc.Tab(label="Fahren", tab_id="tab-test", children=[
+                dbc.Tab(label="Fahren", tab_id="tab-steuerung", children=[
                     dbc.Row([
                         html.Div(style={"height": "30px"}),
                         dbc.Col(dbc.Button("Fahren", id="btn-drive", color="success", className="title"), width=6),
@@ -151,7 +102,7 @@ class SensorDashboard(DataLogger):
                                 html.H4(id="speed-display", className="card-title"),
                                 dcc.Slider(
                                     id="speed-slider", min=-100, max=100, step=1, value=self.car.speed,
-                                    marks={-100: "-100", -30: "-30", 0: "0", 30: "30",40: "40", 50: "50",75: "75", 100: "100"}
+                                    marks={-100: "-100", -30: "-30", 0: "0", 30: "30", 100: "100"}
                                 )
                             ])
                         ], color="primary", inverse=True), width=6),
@@ -182,13 +133,6 @@ class SensorDashboard(DataLogger):
                         dbc.Col(dbc.Button("Fahrmodus_7", id="btn-driveMode7", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Kamerabild", id="btn-cam", color="warning", className="title"), width=2),
                         dbc.Col(dbc.Button("CV Filter speichern", id="btn-save_cv_filter", color="warning", className="title"), width=2),
-                        dbc.Col(dbc.Checkbox(
-                            id="chk_save_images",
-                            label="Bilder speichern",
-                            value=False
-                        ),
-                        width=2
-                        ),
                 ]),
 
                 html.Div(style={"height":"30px"}),
@@ -200,7 +144,7 @@ class SensorDashboard(DataLogger):
                                 html.H4(id="Messwert3", className="title"),
 
                                 html.Img(id="live-image"),
-                                dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
+                                dcc.Interval(id="cam-interval", interval=50, n_intervals=0)
                                 ])
                             ], color="success", inverse=True, outline=False), width=6),
                         dbc.Col(
@@ -312,7 +256,7 @@ class SensorDashboard(DataLogger):
                                 ])
                             ], color="success", inverse=True, outline=False), width=6),
                     ])
-                ]),
+            ]),
 
 #########################
 # Tab 2: Messwerte
@@ -456,7 +400,7 @@ class SensorDashboard(DataLogger):
             #     speed=self.car.speed
                 
             self.state = self.car.state
-            # self.ultrasonic_distance=self.car.get_safe_distance()
+            self.ultrasonic_distance=self.car.get_safe_distance()
 
             return(
                 html.Div(
@@ -484,7 +428,6 @@ class SensorDashboard(DataLogger):
             Output("angle-display", "children"),
             Output("hue_lower", "children"),
             Output("hue_upper", "children"),
-            Output("cam_mode", "children"),
             Input("speed-slider", "value"),
             Input("angle-slider", "value"),
             Input("slider-hue_lower","value"),
@@ -531,7 +474,6 @@ class SensorDashboard(DataLogger):
             Input("btn-driveMode6","n_clicks"),
             Input("btn-driveMode7","n_clicks"),
             Input("btn-cam","n_clicks"),
-            Input("btn-fil","n_clicks"),
             Input("btn-saveLog","n_clicks"),
             Input("btn-save_cv_filter","n_clicks"),
             prevent_initial_call=True
@@ -554,12 +496,12 @@ class SensorDashboard(DataLogger):
                 return ""
             button_id = ctx.triggered[0]["prop_id"].split(".")[0]
             if button_id in ["btn-driveMode1",
-                            "btn-driveMode2",
-                            "btn-driveMode3",
-                            "btn-driveMode4",
-                            "btn-driveMode5",
-                            "btn-driveMode6",
-                            "btn-driveMode7",] and self.car.state != 'drive':
+                             "btn-driveMode2",
+                             "btn-driveMode3",
+                             "btn-driveMode4",
+                             "btn-driveMode5",
+                             "btn-driveMode6",
+                             "btn-driveMode7",] and self.car.state != 'drive':
                 return "Fahrbereitschaft über Fahren herstellen"
             elif button_id == "btn-drive":
                 self.car.state = 'ready'
@@ -607,15 +549,6 @@ class SensorDashboard(DataLogger):
                 elif self.status_cam == False:
                     self.start_cam_thread()
                     text = f'Kamera gestartet'
-                return text
-            elif button_id == "btn-fil":
-#                if self.status_cam == True:
-                if self.status_fil == False:
-                    self.status_fil=True
-                    text = f'Kamera ungefiltert'
-                elif self.status_fil == True:
-                    self.status_fil=False
-                    text = f'Kamera gefiltert'               
                 return text
             elif button_id == "btn-saveLog":
                 self.car.save_logs()
@@ -669,21 +602,14 @@ class SensorDashboard(DataLogger):
 
         @self.app.callback(
                 Output("live-image", "src"), 
-                Input("cam-interval", "n_intervals"),
-                Input("chk_save_images", "value"))
+                Input("cam-interval", "n_intervals"))
         
-        def update_image(n, save_images):
-            if save_images == True:
-                self.car.save_images = True
-            elif save_images == False:
-                self.car.save_images = False
-
+        def update_image(n):
             if self.status_cam == True:
-                return "data:image/jpeg;base64," + self.latest_frame                
+                return "data:image/jpeg;base64," + self.latest_frame
+                
             else:
                 return "assets/no_cam.jpg"
-
-        
 
         @self.app.callback(
             Output("log-dropdown", "options"),
