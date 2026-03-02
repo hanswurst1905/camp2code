@@ -101,7 +101,7 @@ class SensorDashboard(DataLogger):
                                 html.H4(id="speed-display", className="card-title"),
                                 dcc.Slider(
                                     id="speed-slider", min=-100, max=100, step=1, value=self.car.speed,
-                                    marks={-100: "-100", -30: "-30", 0: "0", 30: "30",40: "40", 50: "50",75: "75", 100: "100"}
+                                    marks={-100: "-100", -30: "-30", 0: "0", 26: "26",40: "40", 50: "50",75: "75", 100: "100"}
                                 )
                             ])
                         ], color="primary", inverse=True), width=6),

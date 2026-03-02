@@ -20,11 +20,11 @@
             "hue_l": 90,
             "hue_u": 110,
             "sat_l": 100,
-            "sat_u": 200,
+            "sat_u": 226,
             "snipp_l": 0.15,
             "snipp_u": 0.3,
             "val_l": 100,
-            "val_u": 200
+            "val_u": 150
         },
         "infrared_calibrated_reference_0": 74.5,
         "infrared_calibrated_reference_1": 87.0,
@@ -32,7 +32,7 @@
         "infrared_calibrated_reference_3": 89.5,
         "infrared_calibrated_reference_4": 98.0,
         "min_wheel_speed": 23,
-        "turning_offset": 9
+        "turning_offset": 14
     },
     "10000000a3b691e7": {
         "forward_A": 0,
