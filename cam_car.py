@@ -29,6 +29,7 @@ class CamCar(SensorCar):
         self.right_det =False
         self.ang_ofs_l = 0
         self.ang_ofs_r = 0
+        self.ang_ofs_lr = 0
         self.load_filter_values()
         self.angle_tar_buf = []
         self.steering_angle_filtered = 90
