@@ -35,7 +35,7 @@ class SensorDashboard(DataLogger):
         self.ultrasonic_distance = 0
         self.drive_thread = None
         self.drive_distance = 0
-        self.cam_interval = 0.05
+        self.cam_interval = 0.1
 
     def get_log(self):
         base_log = super().get_log()
@@ -71,7 +71,6 @@ class SensorDashboard(DataLogger):
             # frame = self.car.filtered_image(self.hue_l, self.hue_u,self.sat_l,self.sat_u,self.val_l,self.val_u, self.snipp_l, self.snipp_u)
             
             frame = self.car.image_filtered
-            #frame = self.car.image_edges
 
             if frame is not None:
                 _, buffer = cv2.imencode(".jpg", frame)
@@ -102,7 +101,7 @@ class SensorDashboard(DataLogger):
                                 html.H4(id="speed-display", className="card-title"),
                                 dcc.Slider(
                                     id="speed-slider", min=-100, max=100, step=1, value=self.car.speed,
-                                    marks={-100: "-100", -30: "-30", 0: "0", 30: "30", 100: "100"}
+                                    marks={-100: "-100", -30: "-30", 0: "0", 30: "30",40: "40", 50: "50",75: "75", 100: "100"}
                                 )
                             ])
                         ], color="primary", inverse=True), width=6),
@@ -133,6 +132,13 @@ class SensorDashboard(DataLogger):
                         dbc.Col(dbc.Button("Fahrmodus_7", id="btn-driveMode7", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Kamerabild", id="btn-cam", color="warning", className="title"), width=2),
                         dbc.Col(dbc.Button("CV Filter speichern", id="btn-save_cv_filter", color="warning", className="title"), width=2),
+                        dbc.Col(dbc.Checkbox(
+                            id="chk_save_images",
+                            label="Bilder speichern",
+                            value=False
+                        ),
+                        width=2
+                        ),
                 ]),
 
                 html.Div(style={"height":"30px"}),
@@ -144,7 +150,7 @@ class SensorDashboard(DataLogger):
                                 html.H4(id="Messwert3", className="title"),
 
                                 html.Img(id="live-image"),
-                                dcc.Interval(id="cam-interval", interval=50, n_intervals=0)
+                                dcc.Interval(id="cam-interval", interval=150, n_intervals=0)
                                 ])
                             ], color="success", inverse=True, outline=False), width=6),
                         dbc.Col(
@@ -400,7 +406,7 @@ class SensorDashboard(DataLogger):
             #     speed=self.car.speed
                 
             self.state = self.car.state
-            self.ultrasonic_distance=self.car.get_safe_distance()
+            # self.ultrasonic_distance=self.car.get_safe_distance()
 
             return(
                 html.Div(
@@ -602,14 +608,21 @@ class SensorDashboard(DataLogger):
 
         @self.app.callback(
                 Output("live-image", "src"), 
-                Input("cam-interval", "n_intervals"))
+                Input("cam-interval", "n_intervals"),
+                Input("chk_save_images", "value"))
         
-        def update_image(n):
+        def update_image(n, save_images):
+            if save_images == True:
+                self.car.save_images = True
+            elif save_images == False:
+                self.car.save_images = False
+
             if self.status_cam == True:
-                return "data:image/jpeg;base64," + self.latest_frame
-                
+                return "data:image/jpeg;base64," + self.latest_frame                
             else:
                 return "assets/no_cam.jpg"
+
+        
 
         @self.app.callback(
             Output("log-dropdown", "options"),

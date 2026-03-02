@@ -3,6 +3,8 @@ from sensor_car import*
 import cv2
 import numpy as np
 import math
+import datetime 
+import os
 
 class CamCar(SensorCar):
     def __init__(self):
@@ -33,6 +35,9 @@ class CamCar(SensorCar):
         self.load_filter_values()
         self.angle_tar_buf = []
         self.steering_angle_filtered = 90
+        self.save_images = False
+        self._save_time_interval = datetime.timedelta(seconds=1) #s
+        self.save_time = None        
 
     def load_filter_values(self):
         car_config=self.read_config_json()
@@ -85,6 +90,24 @@ class CamCar(SensorCar):
         self.h, self.w = self.img.shape[:2]
         self.img_hsv = cv2.cvtColor(self.img,cv2.COLOR_BGR2HSV)
         return self.img
+
+
+    def save_image(self):
+        if self.save_images == True:
+            if self.save_time == None:
+                self.save_time = datetime.datetime.now()
+            time = datetime.datetime.now()
+            if time - self.save_time >= self._save_time_interval:
+                now = datetime.datetime.now()
+                timestamp = now.strftime("%Y-%m-%d_%H:%M:%S") + f".{int(now.microsecond/1000):03d}"
+                serial_number = self.get_pi_serial_number()
+                ang = self.steering_angle
+                spd = self.speed
+                folder = "pictures"
+                os.makedirs(folder,exist_ok=True)
+                fn = os.path.join("pictures",f'{timestamp}_{serial_number}_{int(spd)}_{int(ang)}.jpg')
+                cv2.imwrite(fn,self.img_raw)
+                self.save_time = datetime.datetime.now()
 
     @property
     def image(self):
@@ -252,6 +275,7 @@ class CamCar(SensorCar):
                     angle_left -= 180
                 elif angle_left < -90:
                     angle_left += 180
+                angle_left = angle_left * -1      # Korrektur für die richtige Richtung in die gelenkt werden soll                               
 #                offset = ((x1l+x2l)/2) - img_center
                 fac_h = ((min(y1l,y2l)+(abs(y1l - y2l))) / self.h_c)**2 * self._img_filter["fac_h_fummel"] # Mittelpunkt der Linie durch y-Max
             # kleines Kennfeld (Interpolation mittels lambda)
@@ -263,7 +287,7 @@ class CamCar(SensorCar):
                                 [2,  5, 10],])  # Y=250                
                 ang_l_ofs = lambda x, y: float(np.interp(y, Y_l, [np.interp(x, X_l, row) for row in KF_l]))
                 x_l_mean, y_l_mean = np.mean([x1l,x2l]), np.mean([y1l,y2l])
-                angle_left_corr = (angle_left  * fac_h * -1) + ang_l_ofs(x_l_mean,y_l_mean)
+                angle_left_corr = (angle_left  * fac_h) + ang_l_ofs(x_l_mean,y_l_mean)
                 print(f"angle_left_corr: {angle_left_corr:.1f}, angle_left: {angle_left:.1f}, dxl: {dxl}, dyl: {dyl}, fac_h: {fac_h}, MP auf y-Achse: {(min(y1l,y2l)+(abs(y1l - y2l)))}, h_c: {self.h_c}, x_l_mean {x_l_mean}, y_l_mean {y_l_mean}, ang_l_ofs {ang_l_ofs(x_l_mean,y_l_mean)}")
                 self.angle_left_corr.append(angle_left_corr)
 #            self.angle_left_corr = float(np.mean(self.angle_left_corr))
@@ -277,7 +301,8 @@ class CamCar(SensorCar):
                 if angle_right > 90:
                     angle_right -= 180
                 elif angle_right < -90:
-                    angle_right += 180                
+                    angle_right += 180
+                angle_right = angle_right * -1      # Korrektur für die richtige Richtung in die gelenkt werden soll           
 #                offset = ((x1l+x2l)/2) - img_center
 #                fac_h = ((abs(y1l - y2l)) / self.h_c) * self._img_filter["fac_h_fummel"] # 0 ... 2
                 fac_h = ((min(y1r,y2r)+(abs(y1r - y2r))) / self.h_c)**2 * self._img_filter["fac_h_fummel"] # Mittelpunkt der Linie durch y-Max
@@ -290,7 +315,7 @@ class CamCar(SensorCar):
                                 [10,  5, 2],])  # Y=250
                 ang_r_ofs = lambda x, y: float(np.interp(y, Y_r, [np.interp(x, X_r, row) for row in KF_r]))
                 x_r_mean, y_r_mean = np.mean([x1r,x2r]), np.mean([y1r,y2r])
-                angle_right_corr = (angle_right  * fac_h * -1) + ang_r_ofs(x_r_mean, y_r_mean)
+                angle_right_corr = (angle_right  * fac_h) + ang_r_ofs(x_r_mean, y_r_mean)
                 print(f"angle_right_corr: {angle_right_corr:.1f}, angle_right: {angle_right:.1f}, dxr: {dxr}, dyr: {dyr}, fac_h: {fac_h}, MP auf y-Achse: {(min(y1r,y2r)+(abs(y1r - y2r)))}, h_c: {self.h_c}, x_r_mean {x_r_mean}, y_r_mean {y_r_mean}, ang_r_ofs {ang_r_ofs(x_r_mean, y_r_mean)}")
                 self.angle_right_corr.append(angle_right_corr)
 #            self.angle_right_corr = float(np.mean(self.angle_right_corr))            
@@ -298,7 +323,7 @@ class CamCar(SensorCar):
     # Targetwinkel erzeugen
         # Mittelwert aus allen erkanten Linien
 #        if self.left_det == True and self.right_det == True:
-        angle_all_lines = self.angle_left_corr + self.angle_right_corr
+        angle_all_lines = np.array(self.angle_left_corr) + np.array(self.angle_right_corr)
         angle_tar = 90 + float(np.mean(angle_all_lines))
 #            self.ang_ofs_l, self.ang_ofs_r = 0, 0
         # Mittelwert aus gemittelten linken und rechtem Linien Array
@@ -357,6 +382,7 @@ class CamCar(SensorCar):
     def fahrmodus_cam(self):
         while True:
             self.filtered_image()
+            self.save_image()
             if self.state == "stop":
                 print("CamCar Ende")
                 break
