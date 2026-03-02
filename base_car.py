@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 import threading
 from datalogger import DataLogger
+import pygame
 
 class BaseCar():
     '''
@@ -117,7 +118,6 @@ class BaseCar():
     def state(self,value):
         self._state = value
 
-
     def start_calibration(self, serial_number):
         print(f"Seriennummer: {serial_number} unbekannt. Starte Kalibrierung:\n ACHTUNG Bitte PiCAR anheben.")
         self.frontwheels.turn(90)
@@ -182,8 +182,6 @@ class BaseCar():
         '''
         reads serial number of raspberry pi and imports the corresponding setting. Starts calibration cycle if PiCar is unkown.
         '''
-        REGEX = re.compile(r"^Serial\s+:\s+([0-9a-f]+)$", re.MULTILINE)
-        cpuinfo = Path("/proc/cpuinfo").read_text()
         serial_number = self.get_pi_serial_number()
         with open('./software/config.json') as f:
             try:
@@ -194,15 +192,18 @@ class BaseCar():
             new_config = self.start_calibration(serial_number)
             if new_config != None:
                 config_file.update(new_config)
-                with open('./software/config.json','w') as f:
-                    json.dump(config_file, f, sort_keys=True, indent=4)
+                self.write_config_json(config_file)
             else:
                 return config_file
 
         self.__turning_offset=config_file[serial_number]["turning_offset"]
         self.__min_wheel_speed=config_file[serial_number]["min_wheel_speed"]
         return config_file
-
+    
+    def write_config_json(self, config_file):
+        with open('./software/config.json','w') as f:
+                    json.dump(config_file, f, sort_keys=True, indent=4)
+    
     def drive(self):
         '''
         leitet die Fahrbefehle an basisklassen weiter,
@@ -257,7 +258,32 @@ class BaseCar():
         pass
 
     def fahrmodus_4(self):
-        pass
+
+        self.steering_angle = 90
+        self.speed = 0
+        print("fahrmodus4, state", self.state)
+        pygame.init() 
+        pygame.display.set_mode((1,1)) # Dummy-Fenster für Event-System 
+        print("Keyboard-Steuerung aktiv (W/S = Geschwindigkeit, A/D = Lenken, Q = Stop")
+
+        clock = pygame.time.Clock()
+              
+        while self.state == "drive":
+            pygame.event.pump()
+            keys = pygame.key.get_pressed()
+            
+            if keys[pygame.K_a]:
+                self.steering_angle -= 5
+            if keys[pygame.K_d]:
+                self.steering_angle += 5
+            if keys[pygame.K_w]:
+                self.speed += 5
+            if keys[pygame.K_s]:
+                self.speed -= 5
+            if keys[pygame.K_q]:
+                self.stop()
+                break
+            clock.tick(30)
 
     def fahrmodus(self,selection):
         '''
@@ -274,7 +300,7 @@ class BaseCar():
                 speed_lst = [40,40,-40,-40]
                 angle_lst = [90,135,135,90]
                 time_sleep = [1,8,8,1]
-            elif selection == '3': #Fahrmodus3 konfigirierbar über drive_mode.csv
+            elif selection == '3': #Fahrmodus3 konfigurierbar über drive_mode.csv
                 df = pd.read_csv("drive_mode.csv",comment='#')
                 speed_lst = df["speed"].tolist()
                 angle_lst = df["steering_angle"].tolist()
