@@ -30,6 +30,7 @@ class CamCar(SensorCar):
         self.right_det =False
         self.ang_ofs_l = 0
         self.ang_ofs_r = 0
+        self.ang_ofs_lr = 0
         self.load_filter_values()
         self.angle_tar_buf = []
         self.steering_angle_filtered = 90
@@ -170,12 +171,13 @@ class CamCar(SensorCar):
                     if line[0] is None or len(line[0]) != 4:
                         continue
                     x1,y1,x2,y2 = line[0]
-                    if x2 <= self.w * 0.6 and x1 <= self.w * 0.4: #left side line
+                    # if max(x2,x1) <= self.w * 0.6 and min(x1,x2) <= self.w * 0.4: #left side line
+                    if (x1 + x2) / 2 <= self.w * 0.4:
                         self.left_det = True
-                        
                         if len(self.left_line) < max_lines:
                             self.left_line.append(line[0])
-                    elif x2 > self.w * 0.6 and x1 > self.w * 0.4: #right side line
+                    # elif max(x1,x2) > self.w * 0.6 and min(x1,x2) > self.w * 0.4: #right side line
+                    elif (x1 + x2) / 2 >= self.w * 0.6:
                         self.right_det = True
                         if len(self.right_line) < max_lines:
                             self.right_line.append(line[0])
@@ -199,17 +201,7 @@ class CamCar(SensorCar):
                         cv2.line(self.img_filtered,(x1,y1+self.top),(x2,y2+self.top),(0,150,255),2)
                 self.calc_steering_angle_lr()
                 #Lenkwinkel einzeichnen
-                
-                cv2.putText(
-                    img=self.image_filtered,
-                    text=str(int(self.steering_angle_filtered)),
-                    org=(10,480),
-                    fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                    fontScale=2,
-                    color=(0,150,255),
-                    thickness=2,
-                    lineType = cv2.LINE_AA
-                )
+         
             self.img_lined = img
 
         except Exception as e:
@@ -241,11 +233,12 @@ class CamCar(SensorCar):
 
         return [x_min, y_min, x_max, y_max]
 
-
     def calc_steering_angle_lr(self):
         x1l,y1l,x2l,y2l,x1r,y1r,x2r,y2r = 0,0,0,0,0,0,0,0
         img_center = self.w / 2
-        offset_step, offset_max = 0.75, 15
+        offset_step, offset_max = 0.75,15
+        offset_h_thd = self.h_c
+
         if self.left_det == True:
             x1l,y1l,x2l,y2l = self.avg_left_line
             dxl, dyl = x1l-x2l, y1l-y2l
@@ -254,7 +247,19 @@ class CamCar(SensorCar):
             fac_h = ((abs(y1l-y2l)) / self.h_c ) * self._img_filter["fac_h_fummel"] # 0...2
             # self.angle_left_corr = angle_left - offset * self._img_filter["fac_angle"] # 112-90= 22*0,5 = 11 = 101, 11  
             self.angle_left_corr = (angle_left - offset * self._img_filter["fac_angle"] - 90) * fac_h + 90 # 70-90=-20*0.5=-10+90=80
+            
+            # offset für spurhalten
+            # if self.right_det == False:
+            if x1l <= 125 and y1l < offset_h_thd:
+                self.ang_ofs_l = max(self.ang_ofs_l - offset_step, -offset_max)
+            elif x1l > 125 and y1l < offset_h_thd :
+                self.ang_ofs_l = min(self.ang_ofs_l + offset_step, offset_max)
+            angle_tar = 180 - self.angle_left_corr + self.ang_ofs_l
 
+            if self.ang_ofs_lr > 0:
+                self.ang_ofs_lr -= offset_step / 2
+            elif self.ang_ofs_lr < 0:
+                self.ang_ofs_lr += offset_step / 2
 
         if self.right_det == True:
             x1r,y1r,x2r,y2r = self.avg_right_line
@@ -265,29 +270,44 @@ class CamCar(SensorCar):
             # self.angle_right_corr = angle_right + offset * self._img_filter["fac_angle"]
             self.angle_right_corr = (angle_right + offset * self._img_filter["fac_angle"] - 90) * fac_h + 90
 
-        if self.left_det == True and self.right_det == True:
-            angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2
-            self.ang_ofs_l, self.ang_ofs_r = 0, 0
 
-        if self.left_det == True:
-            if x1l <= 150 and y1l >= 350:
-                self.ang_ofs_l = max(self.ang_ofs_l - offset_step, -offset_max)
-            elif x1l > 150 and y1l < 350 :
-                self.ang_ofs_l = min(self.ang_ofs_l + offset_step, offset_max)
-            angle_tar = 180 - self.angle_left_corr + self.ang_ofs_l
-            # angle_tar = 180 - self.angle_left_corr
-
-        if self.right_det == True:
-            if x2r >= 490 and y2r >= 350:
+            #offset für spurhalten
+            # if self.left_det == False:
+            if x2r >= 515 and y2r < offset_h_thd:
                 self.ang_ofs_r = min(self.ang_ofs_r + offset_step, offset_max)
-            elif x2r < 490 and y2r < 350:
+            elif x2r < 515 and y2r < offset_h_thd:
                 self.ang_ofs_r = max(self.ang_ofs_r - offset_step, -offset_max)
             angle_tar = self.angle_right_corr + self.ang_ofs_r
-            # angle_tar = self.angle_right_corr
 
-        elif self.left_det == False and self.right_det == False:
-            pass
-            # self.speed = 0
+            if self.ang_ofs_lr > 0:
+                self.ang_ofs_lr -= offset_step / 2
+            elif self.ang_ofs_lr < 0:
+                self.ang_ofs_lr += offset_step / 2
+
+        if self.left_det == True and self.right_det == True:
+            # x1l,y1l,x2l,y2l = self.avg_left_line
+            # x1r,y1r,x2r,y2r = self.avg_right_line
+            # if self.ang_ofs_l > 0:
+            #     self.ang_ofs_l -= offset_step
+            # elif self.ang_ofs_l < 0:
+            #     self.ang_ofs_l += offset_step
+
+            # if self.ang_ofs_r > 0:
+            #     self.ang_ofs_r -= offset_step
+            # elif self.ang_ofs_r < 0:
+            #     self.ang_ofs_r += offset_step
+            # elif self.ang_ofs_r == 0:
+            #     pass
+            # print("y1l,y2r: ", y1l, y2r, self.h_c)
+            # if y1l and y2r > offset_h_thd:
+            #     dlt_l = self.w/2 - x1l
+            #     dlt_r = x2r - self.w/2
+            #     if dlt_l - dlt_r <= 0 and self.ang_ofs_lr <= offset_max / 4:
+            #         self.ang_ofs_lr += offset_step / 4
+            #     elif dlt_l - dlt_r > 0 and self.ang_ofs_lr >= - offset_max / 4:
+            #         self.ang_ofs_lr -= offset_step / 4
+            angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2 + self.ang_ofs_lr                
+
 
         alpha = self.img_filter["fil_angle"]
 
@@ -311,6 +331,18 @@ class CamCar(SensorCar):
         self.steering_angle = self.steering_angle_filtered
 
         # print("left_det, right_det: ", self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, angle_tar, x1l, x2r)
+        text = f'{self.left_det}  {int(self.ang_ofs_l)}  {int(self.steering_angle)}  {int(self.ang_ofs_r)}  {self.right_det}  {self.ang_ofs_lr}'
+        cv2.putText(
+            img=self.image_filtered,
+            text=text,
+            org=(10,480),
+            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            fontScale=1.25,
+            color=(0,150,255),
+            thickness=2,
+            lineType = cv2.LINE_AA)
+     
+
 
            
     def fahrmodus_cam(self):
