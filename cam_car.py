@@ -5,6 +5,9 @@ import numpy as np
 import math
 import datetime 
 import os
+import pygame
+
+
 
 class CamCar(SensorCar):
     def __init__(self):
@@ -263,26 +266,6 @@ class CamCar(SensorCar):
             self.angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2 + self.ang_ofs_l + self.ang_ofs_r       
         self.steering_angle = max(min(self.angle_tar,135),45)
 
-        # alpha = self.img_filter["fil_angle"]
-
-        # self.angle_tar = max(min(self.angle_tar, 135), 45)
-
-        # target_filtered = (
-        #     alpha * self.angle_tar +
-        #     (1 - alpha) * self.steering_angle_filtered
-        # )
-
-        # max_delta = 3.0  # Grad pro Frame
-        # delta = target_filtered - self.steering_angle_filtered
-
-        # if delta > max_delta:
-        #     delta = max_delta
-        # elif delta < -max_delta:
-        #     delta = -max_delta
-
-        # self.steering_angle_filtered += delta
-        # self.steering_angle_filtered = max(min(self.steering_angle_filtered, 135), 45)
-        # self.steering_angle = self.steering_angle_filtered
 
         # print("left_det, right_det: ", self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, self.angle_tar, x1l, x2r)
         text = f'{int(self.steering_angle)} {self.left_det} {int(self.ang_ofs_l)}  {self.right_det}  {int(self.ang_ofs_r)}'
@@ -295,9 +278,6 @@ class CamCar(SensorCar):
             color=(0,150,255),
             thickness=2,
             lineType = cv2.LINE_AA)
-     
-
-
            
     def fahrmodus_cam(self):
         while True:
@@ -306,6 +286,37 @@ class CamCar(SensorCar):
             if self.state == "stop":
                 print("CamCar Ende")
                 break
+
+    def fahrmodus_4(self):
+
+        self.steering_angle = 90
+        self.speed = 0
+        print("fahrmodus4, state", self.state)
+
+        pygame.init() 
+        pygame.display.set_mode((1,1)) # Dummy-Fenster für Event-System 
+        print("Keyboard-Steuerung aktiv (W/S = Geschwindigkeit, A/D = Lenken, Q = Stop")
+
+        clock = pygame.time.Clock()
+              
+        while self.state == "drive":
+            self.get_image()
+            self.save_image()
+            pygame.event.pump()
+            keys = pygame.key.get_pressed()
+            
+            if keys[pygame.K_a]:
+                self.steering_angle -= 5
+            if keys[pygame.K_d]:
+                self.steering_angle += 5
+            # if keys[pygame.K_w]:
+            #     self.speed += 5
+            if keys[pygame.K_s]:
+                self.steering_angle = 90
+            if keys[pygame.K_q]:
+                self.stop()
+                break
+            clock.tick(30)            
 
 def main():
     car = CamCar()
