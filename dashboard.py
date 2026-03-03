@@ -6,7 +6,8 @@ from datalogger import DataLogger
 import plotly.express as px
 from sonic_car import*
 # from sensor_car import SensorCar
-from cam_car import CamCar
+# from cam_car import CamCar
+from cnn_car import CnnCar
 import threading
 import os
 import pandas as pd
@@ -119,7 +120,7 @@ class SensorDashboard(DataLogger):
                     ]),
                     dbc.Row([
                         html.Div(style={"height": "30px"}),
-                        dbc.Col(dbc.Button("Fahrmodus_1", id="btn-driveMode1", color="success", className="title"), width=2),
+                        dbc.Col(dbc.Button("Fahrmodus_CNN", id="btn-driveMode1", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Fahrmodus_2", id="btn-driveMode2", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Fahrmodus_3", id="btn-driveMode3", color="success", className="title"), width=2),
                 ]),
@@ -129,7 +130,7 @@ class SensorDashboard(DataLogger):
                         dbc.Col(dbc.Button("Fahrmodus_4", id="btn-driveMode4", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Fahrmodus_5", id="btn-driveMode5", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Fahrmodus_6", id="btn-driveMode6", color="success", className="title"), width=2),
-                        dbc.Col(dbc.Button("Fahrmodus_7", id="btn-driveMode7", color="success", className="title"), width=2),
+                        dbc.Col(dbc.Button("Fahrmodus_OpenCV", id="btn-driveMode7", color="success", className="title"), width=2),
                         dbc.Col(dbc.Button("Kamerabild", id="btn-cam", color="warning", className="title"), width=2),
                         dbc.Col(dbc.Button("CV Filter speichern", id="btn-save_cv_filter", color="warning", className="title"), width=2),
                         dbc.Col(dbc.Checkbox(
@@ -375,7 +376,7 @@ class SensorDashboard(DataLogger):
             html.Div(id="action-output", className="mt-3 text-center"),
 
             # Intervall zur Synchronisierung der Slider mit car-Werten
-            dcc.Interval(id="interval-sync", interval=1000, n_intervals=0)
+            dcc.Interval(id="interval-sync", interval=500, n_intervals=0)
         ], fluid=True)
         
 
@@ -523,8 +524,8 @@ class SensorDashboard(DataLogger):
                 self.stop_drive_thread()
                 return "Fahrzeug gestoppt."
             elif button_id == "btn-driveMode1":
-                self.car.fahrmodus_1()
-                return "Fahrmodus_1 gestartet"
+                self.car.fahrmodus_cnn()
+                return "Fahrmodus_cnn gestartet"
                 # self._thread = threading.Thread(target=self.car.fahrmodus_1)
                 # self._thread.start()
             elif button_id == "btn-driveMode2":
@@ -640,7 +641,8 @@ class SensorDashboard(DataLogger):
 if __name__ == "__main__":
     # car = BaseCar()
     # car = SonicCar()
-    car = CamCar()
+    # car = CamCar()
+    car = CnnCar()
     log = DataLogger(car)
     dashboard = SensorDashboard(car)
     
