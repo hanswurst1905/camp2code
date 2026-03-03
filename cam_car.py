@@ -97,7 +97,7 @@ class CamCar(SensorCar):
             time = datetime.datetime.now()
             if time - self.save_time >= self._save_time_interval:
                 now = datetime.datetime.now()
-                timestamp = now.strftime("%Y-%m-%d_%H:%M:%S") + f".{int(now.microsecond/1000):03d}"
+                timestamp = now.strftime("%Y-%m-%d_%H_%M_%S") + f".{int(now.microsecond/1000):03d}"
                 serial_number = self.get_pi_serial_number()
                 ang = self.steering_angle
                 spd = self.speed
