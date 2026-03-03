@@ -256,12 +256,12 @@ class CamCar(SensorCar):
 
             elif self.steering_angle < r_u_thd:
                 fac_ang_ofs_2 = max(min((self.steering_angle - r_l_thd) / (r_u_thd - r_l_thd), 1), 0)
-                self.ang_ofs_r = self.ang_ofs_l * fac_ang_ofs_2
+                self.ang_ofs_r = self.ang_ofs_r * fac_ang_ofs_2
  
                 
 
             self.angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2 + self.ang_ofs_l + self.ang_ofs_r       
-        self.steering_angle = max(min(self.angle_tar,130),50)
+        self.steering_angle = max(min(self.angle_tar,135),45)
 
         # alpha = self.img_filter["fil_angle"]
 
