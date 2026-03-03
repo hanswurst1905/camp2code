@@ -48,11 +48,11 @@
             "hough_line_treshold": 30,
             "hue_l": 90,
             "hue_u": 110,
-            "sat_l": 53,
+            "sat_l": 89,
             "sat_u": 255,
             "snipp_l": 0.2,
             "snipp_u": 0.3,
-            "val_l": 51,
+            "val_l": 78,
             "val_u": 255
         },
         "infrared_calibrated_reference_0": 79.0,
