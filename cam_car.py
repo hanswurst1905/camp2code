@@ -325,11 +325,11 @@ class CamCar(SensorCar):
                                 [ 0, 5, 5, 5, 5, 0],    # Y=96
                                 [ 2, 5,10,10, 5, 2],])  # Y=120     
                 ang_l_ofs = lambda x, y: float(np.interp(y, Y_l, [np.interp(x, X_l, row) for row in KF_l]))
-                x_l_mean, y_l_mean = np.mean([x1l,x2l]), np.mean([y1l,y2l])
+                x_l_mean, y_l_max = np.mean([x1l,x2l]), np.max([y1l,y2l])
                 flip_ang_l_ofs_direction = lambda x, y, limit=(self.w_c/2): y * (-1 if x < limit else 1)      # Richtungsumkehr des Lenkwinkels wenn Linie über Mitte liegt
-                self.angle_l_ofs = ang_l_ofs(x_l_mean,y_l_mean) * flip_ang_l_ofs_direction(x_l_mean,1)
+                self.angle_l_ofs = ang_l_ofs(x_l_mean,y_l_max) * flip_ang_l_ofs_direction(x_l_mean,1)
                 angle_left_corr = (angle_left  * fac_h) + self.angle_l_ofs
-                print(f"angle_left_corr: {angle_left_corr:.1f}, angle_left: {angle_left:.1f}, dxl: {dxl}, dyl: {dyl}, fac_h: {fac_h}, MP auf y-Achse: {(min(y1l,y2l)+(abs(y1l - y2l)))}, h_c: {self.h_c}, x_l_mean {x_l_mean}, y_l_mean {y_l_mean}, ang_l_ofs {ang_l_ofs(x_l_mean,y_l_mean)}")
+                print(f"angle_left_corr: {angle_left_corr:.1f}, angle_left: {angle_left:.1f}, dxl: {dxl}, dyl: {dyl}, fac_h: {fac_h}, MP auf y-Achse: {(min(y1l,y2l)+(abs(y1l - y2l)))}, h_c: {self.h_c}, x_l_mean {x_l_mean}, y_l_max {y_l_max}, ang_l_ofs {ang_l_ofs(x_l_mean,y_l_max)}")
                 self.angle_left_corr.append(angle_left_corr)
 #            self.angle_left_corr = float(np.mean(self.angle_left_corr))
 
@@ -358,11 +358,11 @@ class CamCar(SensorCar):
                                 [ 0, 5, 5, 5, 5, 0],    # Y=96
                                 [ 2, 5,10,10, 5, 2],])  # Y=120     
                 ang_r_ofs = lambda x, y: float(np.interp(y, Y_r, [np.interp(x, X_r, row) for row in KF_r]))
-                x_r_mean, y_r_mean = np.mean([x1r,x2r]), np.mean([y1r,y2r])
+                x_r_mean, y_r_max = np.mean([x1r,x2r]), np.max([y1r,y2r])
                 flip_ang_r_ofs_direction = lambda x, y, limit=(self.w_c/2): y * (-1 if x < limit else 1)      # Richtungsumkehr des Lenkwinkels wenn Linie über Mitte liegt
-                self.angle_r_ofs = ang_r_ofs(x_r_mean,y_r_mean) * flip_ang_r_ofs_direction(x_r_mean,1)
+                self.angle_r_ofs = ang_r_ofs(x_r_mean,y_r_max) * flip_ang_r_ofs_direction(x_r_mean,1)
                 angle_right_corr = (angle_right  * fac_h) + self.angle_r_ofs
-                print(f"angle_right_corr: {angle_right_corr:.1f}, angle_right: {angle_right:.1f}, dxr: {dxr}, dyr: {dyr}, fac_h: {fac_h}, MP auf y-Achse: {(min(y1r,y2r)+(abs(y1r - y2r)))}, h_c: {self.h_c}, x_r_mean {x_r_mean}, y_r_mean {y_r_mean}, ang_r_ofs {ang_r_ofs(x_r_mean, y_r_mean)}")
+                print(f"angle_right_corr: {angle_right_corr:.1f}, angle_right: {angle_right:.1f}, dxr: {dxr}, dyr: {dyr}, fac_h: {fac_h}, MP auf y-Achse: {(min(y1r,y2r)+(abs(y1r - y2r)))}, h_c: {self.h_c}, x_r_mean {x_r_mean}, y_r_max {y_r_max}, ang_r_ofs {ang_r_ofs(x_r_mean, y_r_max)}")
                 self.angle_right_corr.append(angle_right_corr)
 #            self.angle_right_corr = float(np.mean(self.angle_right_corr))            
 
