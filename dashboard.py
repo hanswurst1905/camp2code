@@ -376,7 +376,7 @@ class SensorDashboard(DataLogger):
             html.Div(id="action-output", className="mt-3 text-center"),
 
             # Intervall zur Synchronisierung der Slider mit car-Werten
-            dcc.Interval(id="interval-sync", interval=500, n_intervals=0)
+            dcc.Interval(id="interval-sync", interval=1000, n_intervals=0)
         ], fluid=True)
         
 
