@@ -216,6 +216,8 @@ class CamCar(SensorCar):
         x1l,y1l,x2l,y2l,x1r,y1r,x2r,y2r = 0,0,0,0,0,0,0,0
         img_center = self.w / 2
         offset_max = 15
+        l_l_thd, l_u_thd = 100, 110
+        r_l_thd, r_u_thd = 70, 80   # untere und obere Schwelle
 
         if self.left_det == True:
             x1l,y1l,x2l,y2l = self.avg_left_line
@@ -233,7 +235,12 @@ class CamCar(SensorCar):
             # print("l: ", wx)
             ref = self.w/7
             self.ang_ofs_l = (wx-ref) / ref * offset_max
-            self.angle_tar = 180 - self.angle_left_corr + self.ang_ofs + self.ang_ofs_l
+            self.angle_tar = 180 - self.angle_left_corr #+ self.ang_ofs + self.ang_ofs_l
+
+            if self.angle_tar > l_l_thd:
+                fac_ang_ofs_2 = max(min((l_u_thd - self.steering_angle) / (l_u_thd - l_l_thd), 1), 0)
+                self.ang_ofs_l = self.ang_ofs_l * fac_ang_ofs_2
+            self.angle_tar = self.angle_tar + self.ang_ofs_l
 
         if self.right_det == True:
             x1r,y1r,x2r,y2r = self.avg_right_line
@@ -247,23 +254,26 @@ class CamCar(SensorCar):
             # print("r: ", wx)
             ref_r = self.w - self.w/7
             self.ang_ofs_r = (wx - ref_r) / (self.w/7) * offset_max
-            self.angle_tar = self.angle_right_corr + self.ang_ofs + self.ang_ofs_r
+            self.angle_tar = self.angle_right_corr #+ self.ang_ofs + self.ang_ofs_r
 
+            if self.angle_tar < r_u_thd:
+                fac_ang_ofs_2 = max(min((self.steering_angle - r_l_thd) / (r_u_thd - r_l_thd), 1), 0)
+                self.ang_ofs_r = self.ang_ofs_r * fac_ang_ofs_2
+            self.angle_tar = self.angle_tar + self.ang_ofs_r
 
         if self.left_det == True and self.right_det == True:
-            l_l_thd, l_u_thd = 100, 110
-            r_l_thd, r_u_thd = 70, 80   # untere und obere Schwelle
-            if self.steering_angle > l_l_thd:
+
+            self.angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2 #+ self.ang_ofs_l + self.ang_ofs_r 
+
+            if self.angle_tar > l_l_thd:
                 fac_ang_ofs_2 = max(min((l_u_thd - self.steering_angle) / (l_u_thd - l_l_thd), 1), 0)
                 self.ang_ofs_l = self.ang_ofs_l * fac_ang_ofs_2
 
-            elif self.steering_angle < r_u_thd:
+            elif self.angle_tar < r_u_thd:
                 fac_ang_ofs_2 = max(min((self.steering_angle - r_l_thd) / (r_u_thd - r_l_thd), 1), 0)
                 self.ang_ofs_r = self.ang_ofs_r * fac_ang_ofs_2
- 
                 
-
-            self.angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2 + self.ang_ofs_l + self.ang_ofs_r       
+        self.angle_tar = self.angle_tar + self.ang_ofs_l + self.ang_ofs_r
         self.steering_angle = max(min(self.angle_tar,135),45)
 
 
