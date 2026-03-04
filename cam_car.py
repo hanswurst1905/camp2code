@@ -275,11 +275,11 @@ class CamCar(SensorCar):
                 self.ang_ofs_r = self.ang_ofs_r * fac_ang_ofs_2
                 
         self.angle_tar = self.angle_tar + self.ang_ofs_l + self.ang_ofs_r
-        # steering_angle_raw.append(max(min(self.angle_tar,135),45))
-        # if len(steering_angle_raw) > 5:
-        #     steering_angle_raw.pop(0)
-        # self.steering_angle = np.mean(steering_angle_raw)
-        self.steering_angle = (max(min(self.angle_tar,135),45))
+        steering_angle_raw.append(max(min(self.angle_tar,135),45))
+        if len(steering_angle_raw) > 5:
+            steering_angle_raw.pop(0)
+        self.steering_angle = np.mean(steering_angle_raw)
+        # self.steering_angle = (max(min(self.angle_tar,135),45))
 
         # print("left_det, right_det: ", self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, self.angle_tar, x1l, x2r)
         text = f'{int(self.steering_angle)} {self.left_det} {int(self.ang_ofs_l)}  {self.right_det}  {int(self.ang_ofs_r)}'
