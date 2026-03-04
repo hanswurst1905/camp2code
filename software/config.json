@@ -32,7 +32,7 @@
         "infrared_calibrated_reference_3": 89.5,
         "infrared_calibrated_reference_4": 98.0,
         "min_wheel_speed": 23,
-        "turning_offset": 9
+        "turning_offset": 14
     },
     "10000000a3b691e7": {
         "forward_A": 0,

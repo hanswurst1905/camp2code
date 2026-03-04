@@ -5,6 +5,9 @@ import numpy as np
 import math
 import datetime 
 import os
+import pygame
+
+
 
 class CamCar(SensorCar):
     def __init__(self):
@@ -26,14 +29,14 @@ class CamCar(SensorCar):
         self.angle_corr = []
         self.angle_left_corr = 0
         self.angle_right_corr = 0
-        self.lines = []  
+        self.angle_tar = self.steering_angle
         self.left_line = []
         self.right_line = []
         self.left_det = False
         self.right_det =False
+        self.ang_ofs = 0
         self.ang_ofs_l = 0
         self.ang_ofs_r = 0
-        self.ang_ofs_lr = 0
         self.load_filter_values()
         self.angle_tar_buf = []
         self.steering_angle_filtered = 90
@@ -103,7 +106,7 @@ class CamCar(SensorCar):
             time = datetime.datetime.now()
             if time - self.save_time >= self._save_time_interval:
                 now = datetime.datetime.now()
-                timestamp = now.strftime("%Y-%m-%d_%H:%M:%S") + f".{int(now.microsecond/1000):03d}"
+                timestamp = now.strftime("%Y-%m-%d_%H_%M_%S") + f".{int(now.microsecond/1000):03d}"
                 serial_number = self.get_pi_serial_number()
                 ang = self.steering_angle
                 spd = self.speed
@@ -264,169 +267,72 @@ class CamCar(SensorCar):
             print(f'Fehler aufgetreten:{e}')
 
 
-
     def calc_steering_angle_lr(self):
         x1l,y1l,x2l,y2l,x1r,y1r,x2r,y2r = 0,0,0,0,0,0,0,0
         img_center = self.w / 2
-        angles_corr = []
+        offset_max = 15
 
-    # Lenkwinkel mit allen linen berechnen
-
-        for line in self.lines:
-            x1,y1,x2,y2 = line
-            dx, dy = x1-x2, y1-y2
-            angle = math.degrees(math.atan2(dx,dy))       # arctan alfa = gegenkathete durch ankathete = x / y aber wegen cv2 Koordinatensystem y-achse gedreht muss Y / X
-            if angle > 90:   
-                angle -= 180
-            elif angle < -90:
-                angle += 180
-            angle = angle * -1      # Korrektur für die richtige Richtung in die gelenkt werden soll                               
-#                offset = ((x1+x2)/2) - img_center
-            fac_h = ((min(y1,y2)+(abs(y1 - y2))) / self.h_c) * self._img_filter["fac_h_fummel"] # Mittelpunkt der Linie durch y-Max
-        # kleines Kennfeld (Interpolation mittels lambda)
-#            X = np.array([71, 107, 142, 178, 213, 249])   # Spalten (X-Achse)
-            X = np.array([self.w_c/(9/2), self.w_c/(9/3) , self.w_c/(9/4), self.w_c/(9/5), self.w_c/(9/6) , self.w_c/(9/7)])   # Spalten (X-Achse)
-#            Y = np.array([72, 96, 120])   # Zeilen (Y-Achse)
-            Y = np.array([self.h_c/(5/3), self.h_c/(5/4), self.h_c/(5/5)])   # Zeilen (Y-Achse)
-            # Kennfeld: Zeilen sind Y, Spalten sind X
-            KF = np.array([ [ 0, 0, 2, 2, 0, 0],    # Y=72
-                            [ 0, 5, 5, 5, 5, 0],    # Y=96
-                            [ 2, 5,10,10, 5, 2],])  # Y=120     
-            ang_ofs = lambda x, y: float(np.interp(y, Y, [np.interp(x, X, row) for row in KF]))
-#            x_mean, y_mean = np.mean([x1,x2]), np.mean([y1,y2])    # wenn ich y_mean nehme und die Linie in die Mitte kommt ist sie meist lang und somit der mittelpunkt der line weit weg vom unteren Rand, damit bleibt Offest fast Null
-            x_mean, y_max = np.mean([x1,x2]), np.max([y1,y2])
-            flip_ofs_direction = lambda x, y, limit=(self.w_c/2): y * (-1 if x < limit else 1)      # Richtungsumkehr des Lenkwinkels wenn Linie über Mitte liegt
-            self.angle_ofs = ang_ofs(x_mean,y_max) * flip_ofs_direction(x_mean,1)
-            angle_corr = (angle  * fac_h) + self.angle_ofs
-            print(f"angle_corr: {angle_corr:.1f}, angle: {angle:.1f}, dx: {dx}, dy: {dy}, fac_h: {fac_h:.2f}, MP auf y-Achse: {(min(y1,y2)+(abs(y1 - y2)))}, w_c: {self.w_c}, x_mean {x_mean}, h_c: {self.h_c}, y_max {y_max}, ang_ofs {ang_ofs(x_mean,y_max)}")
-            angles_corr.append(angle_corr)
-#            print("self.angle_corr",self.angle_corr)
-#            self.angle_left_corr = float(np.mean(self.angle_left_corr))
-
-#     # Lenkwinkelk mit linken und rechten Linien berehnen        
-#         if self.left_det == True:
-#             self.angle_left_corr = []
-#             for line in self.left_line:
-#                 x1l,y1l,x2l,y2l = line
-#                 dxl, dyl = x1l-x2l, y1l-y2l
-# #                angle_left = 180 - math.degrees(math.atan2(dyl,dxl))
-#                 angle_left = math.degrees(math.atan2(dxl,dyl))       # arctan alfa = gegenkathete durch ankathete = x / y aber wegen cv2 Koordinatensystem y-achse gedreht muss Y / X
-#                 if angle_left > 90:   
-#                     angle_left -= 180
-#                 elif angle_left < -90:
-#                     angle_left += 180
-#                 angle_left = angle_left * -1      # Korrektur für die richtige Richtung in die gelenkt werden soll                               
-# #                offset = ((x1l+x2l)/2) - img_center
-#                 fac_h = ((min(y1l,y2l)+(abs(y1l - y2l))) / self.h_c)**2 * self._img_filter["fac_h_fummel"] # Mittelpunkt der Linie durch y-Max
-#             # kleines Kennfeld (Interpolation mittels lambda)
-#     #            X = np.array([71, 107, 142, 178, 213, 249])   # Spalten (X-Achse)
-#                 X_l = np.array([self.w_c/(9/2), self.w_c/(9/3) , self.w_c/(9/4), self.w_c/(9/5), self.w_c/(9/6) , self.w_c/(9/7)])   # Spalten (X-Achse)
-#     #            Y = np.array([72, 96, 120])   # Zeilen (Y-Achse)
-#                 Y_l = np.array([self.h_c/(5/3), self.h_c/(5/4), self.h_c/(5/5)])   # Zeilen (Y-Achse)
-#                 # Kennfeld: Zeilen sind Y, Spalten sind X
-#                 KF_l = np.array([ [ 0, 0, 2, 2, 0, 0],    # Y=72
-#                                 [ 0, 5, 5, 5, 5, 0],    # Y=96
-#                                 [ 2, 5,10,10, 5, 2],])  # Y=120     
-#                 ang_l_ofs = lambda x, y: float(np.interp(y, Y_l, [np.interp(x, X_l, row) for row in KF_l]))
-#                 x_l_mean, y_l_mean = np.mean([x1l,x2l]), np.mean([y1l,y2l])
-#                 flip_ang_l_ofs_direction = lambda x, y, limit=(self.w_c/2): y * (-1 if x < limit else 1)      # Richtungsumkehr des Lenkwinkels wenn Linie über Mitte liegt
-#                 self.angle_l_ofs = ang_l_ofs(x_l_mean,y_l_mean) * flip_ang_l_ofs_direction(x_l_mean,1)
-#                 angle_left_corr = (angle_left  * fac_h) + self.angle_l_ofs
-#                 print(f"angle_left_corr: {angle_left_corr:.1f}, angle_left: {angle_left:.1f}, dxl: {dxl}, dyl: {dyl}, fac_h: {fac_h}, MP auf y-Achse: {(min(y1l,y2l)+(abs(y1l - y2l)))}, h_c: {self.h_c}, x_l_mean {x_l_mean}, y_l_mean {y_l_mean}, ang_l_ofs {ang_l_ofs(x_l_mean,y_l_mean)}")
-#                 self.angle_left_corr.append(angle_left_corr)
-# #            self.angle_left_corr = float(np.mean(self.angle_left_corr))
-
-#         if self.right_det == True:
-#             self.angle_right_corr = []
-#             for line in self.right_line:
-#                 x1r,y1r,x2r,y2r = line
-#                 dxr, dyr = x1r-x2r, y1r-y2r
-#                 angle_right = math.degrees(math.atan2(dxr,dyr))
-#                 if angle_right > 90:
-#                     angle_right -= 180
-#                 elif angle_right < -90:
-#                     angle_right += 180
-#                 angle_right = angle_right * -1      # Korrektur für die richtige Richtung in die gelenkt werden soll           
-# #                offset = ((x1l+x2l)/2) - img_center
-# #                fac_h = ((abs(y1l - y2l)) / self.h_c) * self._img_filter["fac_h_fummel"] # 0 ... 2
-#                 fac_h = ((min(y1r,y2r)+(abs(y1r - y2r))) / self.h_c)**2 * self._img_filter["fac_h_fummel"] # Mittelpunkt der Linie durch y-Max
-#             # kleines Kennfeld (Interpolation mittels lambda)
-#                 # X = np.array([71, 107, 142, 178, 213, 249])   # Spalten (X-Achse)
-#                 X_r = np.array([self.w_c/(9/2), self.w_c/(9/3) , self.w_c/(9/4), self.w_c/(9/5), self.w_c/(9/6) , self.w_c/(9/7)])   # Spalten (X-Achse)
-#                 # Y = np.array([72, 96, 120])   # Zeilen (Y-Achse)
-#                 Y_r = np.array([self.h_c/(5/3), self.h_c/(5/4), self.h_c/(5/5)])   # Zeilen (Y-Achse)
-#                 # Kennfeld: Zeilen sind Y, Spalten sind X
-#                 KF_r = np.array([ [ 0, 0, 2, 2, 0, 0],    # Y=72
-#                                 [ 0, 5, 5, 5, 5, 0],    # Y=96
-#                                 [ 2, 5,10,10, 5, 2],])  # Y=120     
-#                 ang_r_ofs = lambda x, y: float(np.interp(y, Y_r, [np.interp(x, X_r, row) for row in KF_r]))
-#                 x_r_mean, y_r_mean = np.mean([x1r,x2r]), np.mean([y1r,y2r])
-#                 flip_ang_r_ofs_direction = lambda x, y, limit=(self.w_c/2): y * (-1 if x < limit else 1)      # Richtungsumkehr des Lenkwinkels wenn Linie über Mitte liegt
-#                 self.angle_r_ofs = ang_r_ofs(x_r_mean,y_r_mean) * flip_ang_r_ofs_direction(x_r_mean,1)
-#                 angle_right_corr = (angle_right  * fac_h) + self.angle_r_ofs
-#                 print(f"angle_right_corr: {angle_right_corr:.1f}, angle_right: {angle_right:.1f}, dxr: {dxr}, dyr: {dyr}, fac_h: {fac_h}, MP auf y-Achse: {(min(y1r,y2r)+(abs(y1r - y2r)))}, h_c: {self.h_c}, x_r_mean {x_r_mean}, y_r_mean {y_r_mean}, ang_r_ofs {ang_r_ofs(x_r_mean, y_r_mean)}")
-#                 self.angle_right_corr.append(angle_right_corr)
-# #            self.angle_right_corr = float(np.mean(self.angle_right_corr))            
-
-    # Targetwinkel erzeugen
-        # Mittelwert aus allen erkanten Linien
-#        if self.left_det == True and self.right_det == True:
-        # angle_all_lines = np.array(self.angle_left_corr) + np.array(self.angle_right_corr)
-        # angle_tar = 90 + float(np.mean(angle_all_lines))
-        angle_tar = 90 + float(np.mean(angles_corr))
-#            self.ang_ofs_l, self.ang_ofs_r = 0, 0
-        # Mittelwert aus gemittelten linken und rechtem Linien Array
-        # self.angle_left_corr = float(np.mean(self.angle_left_corr))
-        # self.angle_right_corr = float(np.mean(self.angle_right_corr))
-        # if self.left_det == True and self.right_det == True:
-        #     angle_tar = 90- (self.angle_left_corr + self.angle_right_corr) / 2
-        #     self.ang_ofs_l, self.ang_ofs_r = 0, 0
-
-#         if self.left_det == True:
-#             # if x1l <= 100 and y1l >= 350:
-#             #     self.ang_ofs_l = max(self.ang_ofs_l - 1, -15)
-#             # elif x1l > 100 and y1l < 350 :
-#             #     self.ang_ofs_l = min(self.ang_ofs_l + 1, 15)
-#             angle_tar = 90 + np.array(self.angle_left_corr) + self.ang_ofs_l
-#             # angle_tar = 180 - self.angle_left_corr
+        if self.left_det == True:
+            x1l,y1l,x2l,y2l = self.avg_left_line
+            dxl, dyl = x1l-x2l, y1l-y2l
+            angle_left = 180 - math.degrees(math.atan2(dyl,dxl))
+            offset = ((x1l+x2l)/2) - img_center
+            fac_h = ((abs(y1l-y2l)) / self.h_c ) * self._img_filter["fac_h_fummel"] # 0...2
+            # self.angle_left_corr = angle_left - offset * self._img_filter["fac_angle"] # 112-90= 22*0,5 = 11 = 101, 11  
+            self.angle_left_corr = (angle_left - offset * self._img_filter["fac_angle"] - 90) * fac_h + 90 # 70-90=-20*0.5=-10+90=80
             
-#         if self.right_det == True:
-#             # if x2r >= 540 and y2r >= 350:
-#             #     self.ang_ofs_r = min(self.ang_ofs_r + 1, 15)
-#             # elif x2r < 540 and y2r < 350:
-#             #     self.ang_ofs_r = max(self.ang_ofs_r - 1, -15)
-#             angle_tar = 90 + np.array(self.angle_right_corr) + self.ang_ofs_r
-#             # angle_tar = self.angle_right_corr
-        
-#         elif self.left_det == False and self.right_det == False:
-# #            pass
-#            self.speed = 0
-        
-        angle_tar = np.mean(angle_tar)
-        
-        alpha = self.img_filter["fil_angle"]
-        
-        angle_tar = max(min(angle_tar, 135), 45)
+            
+            # offset für spurhalten
+            # if self.right_det == False:
+            wx = (x1l + x2l) / 2
+            # print("l: ", wx)
+            ref = self.w/7
+            self.ang_ofs_l = (wx-ref) / ref * offset_max
+            self.angle_tar = 180 - self.angle_left_corr + self.ang_ofs + self.ang_ofs_l
 
-        target_filtered = (
-            alpha * angle_tar +
-            (1 - alpha) * self.steering_angle_filtered
-        )
+        if self.right_det == True:
+            x1r,y1r,x2r,y2r = self.avg_right_line
+            dxr, dyr = x1r-x2r, y1r-y2r
+            angle_right = 180+math.degrees(math.atan2(dyr,dxr))
+            offset = ((x1r+x2r)/2) - img_center
+            fac_h = ((abs(y1r-y2r)) / self.h_c) * self._img_filter["fac_h_fummel"] # 0...2
+            # self.angle_right_corr = angle_right + offset * self._img_filter["fac_angle"]
+            self.angle_right_corr = (angle_right + offset * self._img_filter["fac_angle"] - 90) * fac_h + 90
+            wx = (x1r + x2r) / 2
+            # print("r: ", wx)
+            ref_r = self.w - self.w/7
+            self.ang_ofs_r = (wx - ref_r) / (self.w/7) * offset_max
+            self.angle_tar = self.angle_right_corr + self.ang_ofs + self.ang_ofs_r
 
-        max_delta = 3.0  # Grad pro Frame
-        delta = target_filtered - self.steering_angle_filtered
-        
-        if delta > max_delta:
-            delta = max_delta
-        elif delta < -max_delta:
-            delta = -max_delta
 
-        self.steering_angle_filtered += delta
-        self.steering_angle_filtered = max(min(self.steering_angle_filtered, 135), 45)
-        self.steering_angle = self.steering_angle_filtered
+        if self.left_det == True and self.right_det == True:
+            l_l_thd, l_u_thd = 100, 110
+            r_l_thd, r_u_thd = 70, 80   # untere und obere Schwelle
+            if self.steering_angle > l_l_thd:
+                fac_ang_ofs_2 = max(min((l_u_thd - self.steering_angle) / (l_u_thd - l_l_thd), 1), 0)
+                self.ang_ofs_l = self.ang_ofs_l * fac_ang_ofs_2
 
-#        print("left_det, right_det:" , self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, angle_tar, x1l, x2r)
+            elif self.steering_angle < r_u_thd:
+                fac_ang_ofs_2 = max(min((self.steering_angle - r_l_thd) / (r_u_thd - r_l_thd), 1), 0)
+                self.ang_ofs_r = self.ang_ofs_r * fac_ang_ofs_2
+ 
+                
 
+            self.angle_tar = (180 - self.angle_left_corr + self.angle_right_corr) / 2 + self.ang_ofs_l + self.ang_ofs_r       
+        self.steering_angle = max(min(self.angle_tar,135),45)
+
+
+        # print("left_det, right_det: ", self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, self.angle_tar, x1l, x2r)
+        text = f'{int(self.steering_angle)} {self.left_det} {int(self.ang_ofs_l)}  {self.right_det}  {int(self.ang_ofs_r)}'
+        cv2.putText(
+            img=self.image_filtered,
+            text=text,
+            org=(10,480),
+            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            fontScale=1.25,
+            color=(0,150,255),
+            thickness=2,
+            lineType = cv2.LINE_AA)
            
     def fahrmodus_cam(self):
         while True:
@@ -436,9 +342,41 @@ class CamCar(SensorCar):
                 print("CamCar Ende")
                 break
 
+    def fahrmodus_4(self):
+
+        self.steering_angle = 90
+        self.speed = 0
+        print("fahrmodus4, state", self.state)
+
+        pygame.init() 
+        pygame.display.set_mode((1,1)) # Dummy-Fenster für Event-System 
+        print("Keyboard-Steuerung aktiv (W/S = Geschwindigkeit, A/D = Lenken, Q = Stop")
+
+        clock = pygame.time.Clock()
+              
+        while self.state == "drive":
+            self.get_image()
+            self.save_image()
+            pygame.event.pump()
+            keys = pygame.key.get_pressed()
+            
+            if keys[pygame.K_a]:
+                self.steering_angle -= 5
+            if keys[pygame.K_d]:
+                self.steering_angle += 5
+            # if keys[pygame.K_w]:
+            #     self.speed += 5
+            if keys[pygame.K_s]:
+                self.steering_angle = 90
+            if keys[pygame.K_q]:
+                self.stop()
+                break
+            clock.tick(30)            
+
 def main():
     car = CamCar()
     car.export_cv_filters()
+    
     car.fahrmodus_cam()
 
 if __name__ == "__main__":

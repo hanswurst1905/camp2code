@@ -1,10 +1,11 @@
-from sensor_car import SensorCar
-from cam_car import CamCar
+# from sensor_car import SensorCar
+# from cam_car import CamCar
+from cnn_car import CnnCar
 from dashboard import SensorDashboard
 
 def main():
     # car = SensorCar()
-    car = CamCar()
+    car = CnnCar()
     dashboard = SensorDashboard(car)
     try:
         dashboard.run()

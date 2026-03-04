@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 import threading
 from datalogger import DataLogger
-import pygame
+
 
 class BaseCar():
     '''
@@ -243,7 +243,8 @@ class BaseCar():
         '''
         führt fahrmodus_1 aus
         '''
-        self.fahrmodus(selection='1')
+        # self.fahrmodus(selection='1')
+        pass
 
     def fahrmodus_2(self):
         '''
@@ -257,33 +258,7 @@ class BaseCar():
     def fahrmodus_3(self):
         pass
 
-    def fahrmodus_4(self):
 
-        self.steering_angle = 90
-        self.speed = 0
-        print("fahrmodus4, state", self.state)
-        pygame.init() 
-        pygame.display.set_mode((1,1)) # Dummy-Fenster für Event-System 
-        print("Keyboard-Steuerung aktiv (W/S = Geschwindigkeit, A/D = Lenken, Q = Stop")
-
-        clock = pygame.time.Clock()
-              
-        while self.state == "drive":
-            pygame.event.pump()
-            keys = pygame.key.get_pressed()
-            
-            if keys[pygame.K_a]:
-                self.steering_angle -= 5
-            if keys[pygame.K_d]:
-                self.steering_angle += 5
-            if keys[pygame.K_w]:
-                self.speed += 5
-            if keys[pygame.K_s]:
-                self.speed -= 5
-            if keys[pygame.K_q]:
-                self.stop()
-                break
-            clock.tick(30)
 
     def fahrmodus(self,selection):
         '''
