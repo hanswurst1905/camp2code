@@ -10,7 +10,7 @@ class CnnCar(CamCar):
 
 
     def predict_steering_angle(self):
-        interpreter = tflite.Interpreter(model_path="PiCar_model.tflite") # path=Pfad zur .tflite Datei
+        interpreter = tflite.Interpreter(model_path="models/01_live_model_tflite.tflite") # path=Pfad zur .tflite Datei
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
         interpreter.allocate_tensors()
