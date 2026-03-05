@@ -15,15 +15,29 @@ class OpenCVCar(CamCar):
         frame = super().get_frame()
         return self.process_frame(frame)
 
+#     def process_frame(self, frame):
+#         """
+#         Hier kann beliebige OpenCV-Logik rein.
+#         Erstmal nur Downsampling.
+#         """
+#         # entweder - Downsampling per Stride (schnell)
+#         resized = np.ascontiguousarray(frame[::self.pix, ::self.pix, :])    # sorgt für zusammenhängenden Speicher (sonst Probleme mit Weiterverarbeitung mit cv2)
+#         # oder - Resize (qualitativ oft besser (Anti‑Aliasing))
+# #        h, w = frame.shape[:2]
+# #        resized = cv2.resize(frame, (w // self.pix, h // self.pix), interpolation=cv2.INTER_AREA)
+#         return resized
+    
+    
     def process_frame(self, frame):
-        """
-        Hier kann beliebige OpenCV-Logik rein.
-        Erstmal nur Downsampling.
-        """
-        # entweder - Downsampling per Stride (schnell)
+        """Hier deine OpenCV-Pipeline."""
+        frame_progress = self.image_size_reduction(frame)
+        # TODO: weitere OpenCV-Schritte (Canny/Hough/Overlays/…)
+        return frame_progress
+
+    def image_size_reduction(self, frame):
+    # entweder - Downsampling per Stride (schnell)
         resized = np.ascontiguousarray(frame[::self.pix, ::self.pix, :])    # sorgt für zusammenhängenden Speicher (sonst Probleme mit Weiterverarbeitung mit cv2)
-        # oder - Resize (qualitativ oft besser (Anti‑Aliasing))
+    # oder - Resize (qualitativ oft besser (Anti‑Aliasing))
 #        h, w = frame.shape[:2]
 #        resized = cv2.resize(frame, (w // self.pix, h // self.pix), interpolation=cv2.INTER_AREA)
-
         return resized
