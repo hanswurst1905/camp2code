@@ -41,6 +41,7 @@ class CamCar(SensorCar):
         self.save_images = False
         self._save_time_interval = datetime.timedelta(seconds=1) #s
         self.save_time = None
+        self.steering_angle_raw = []
 
     def load_filter_values(self):
         car_config=self.read_config_json()
@@ -218,7 +219,7 @@ class CamCar(SensorCar):
         offset_max = 15
         l_l_thd, l_u_thd = 70, 89
         r_l_thd, r_u_thd = 91, 110   # untere und obere Schwelle
-        steering_angle_raw = []
+        
 
         if self.left_det == True:
             x1l,y1l,x2l,y2l = self.avg_left_line
@@ -275,10 +276,10 @@ class CamCar(SensorCar):
                 self.ang_ofs_r = self.ang_ofs_r * fac_ang_ofs_2
                 
         self.angle_tar = self.angle_tar + self.ang_ofs_l + self.ang_ofs_r
-        steering_angle_raw.append(max(min(self.angle_tar,135),45))
-        if len(steering_angle_raw) > 5:
-            steering_angle_raw.pop(0)
-        self.steering_angle = np.mean(steering_angle_raw)
+        self.steering_angle_raw.append(max(min(self.angle_tar,135),45))
+        if len(self.steering_angle_raw) >= 2:
+            self.steering_angle_raw.pop(0)
+        self.steering_angle = np.mean(self.steering_angle_raw)
         # self.steering_angle = (max(min(self.angle_tar,135),45))
 
         # print("left_det, right_det: ", self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, self.angle_tar, x1l, x2r)
