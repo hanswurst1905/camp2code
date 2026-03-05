@@ -1,39 +1,29 @@
+# opencvcar.py
 from camcar import CamCar
-import cv2
 import numpy as np
-import math
-
+import cv2
 
 class OpenCVCar(CamCar):
     def __init__(self):
         super().__init__()
-        self.img_pix = 2    # Downsampling-Faktor
+        self.pix = 2   # default raw size (1 = keine Reduktion)
 
-
-    def get_view_frame(self):
-        """Überschreibt die Basismethode der Elternklasse → liefert das weiter verarbeitete Frame."""
-        raw = self.camera.get_frame()
-        if raw is None:
-            # Fallback: schwarzes Bild, damit das Dashboard nicht stirbt
-            return np.zeros((240, 240, 3), dtype=np.uint8)
-
-        return self.process_frame(raw)
-    
+    def get_frame(self):
+        """
+        Erbt Frame vom CamCar, wendet dann OpenCV-Verarbeitung an.
+        """
+        frame = super().get_frame()
+        return self.process_frame(frame)
 
     def process_frame(self, frame):
         """
-        Hier baust du deine komplette OpenCV-Pipeline ein:
-        - Downsample
-        - weitere Verarbeitung (Kanten, Hough, Masken, ...)
-        - Overlays (z. B. Winkel, Linien, FPS)
+        Hier kann beliebige OpenCV-Logik rein.
+        Erstmal nur Downsampling.
         """
-        frame_progress = self.image_size_reduction(frame, self.img_pix)
-        # TODO: weitere Schritte hier:
-        # edges = cv2.Canny(cv2.cvtColor(small, cv2.COLOR_BGR2GRAY), 60, 150)
-        # ... overlays / annotierungen ...
-        return frame_progress
+        # entweder - Downsampling per Stride (schnell)
+        resized = np.ascontiguousarray(frame[::self.pix, ::self.pix, :])    # sorgt für zusammenhängenden Speicher (sonst Probleme mit Weiterverarbeitung mit cv2)
+        # oder - Resize (qualitativ oft besser (Anti‑Aliasing))
+#        h, w = frame.shape[:2]
+#        resized = cv2.resize(frame, (w // self.pix, h // self.pix), interpolation=cv2.INTER_AREA)
 
-
-    def image_size_reduction(self, frame, pix=2):
-        """Downsampling per Pixel-Striding (sehr schnell, ohne Filter)."""
-        return frame[::pix, ::pix, :]
+        return resized

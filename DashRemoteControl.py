@@ -8,6 +8,9 @@ import os.path
 import json
 import uuid
 import dash
+import time
+import cv2
+import numpy as np
 from dash import html, dcc
 from dash.dependencies import Output, Input, State
 from dash import callback_context
@@ -18,36 +21,64 @@ import socket
 from cv2 import imencode, imwrite
 from datetime import datetime
 from opencvcar import OpenCVCar
+from collections import deque
+import threading
+
+
+# --- FPS Messung (global) ---
+_fps_lock = threading.Lock()
+_fps_window = deque(maxlen=30)  # gleitender Durchschnitt über ~30 Frames
+_fps_value = 0.0
+_last_ts = None
+
 
 car = OpenCVCar()
 take_image = False
 
-def generate_camera_image(car):
-    """Generator for the images from the camera for the live view in dash"""
+
+def generate_stream(frame_provider):
+    """Generiert einen MJPEG-Stream, indem pro Iteration frame_provider() aufgerufen wird."""
     image_id = 0
     run_id = str(uuid.uuid4())[:8]
-    images_dir = os.path.join(os.getcwd(), "images")
-    if not os.path.exists(images_dir):
-        os.makedirs(images_dir, exist_ok=True)
-
+# FPS Variablen
+    last_time = time.time()
+    fps = 0
+    if not os.path.exists(os.path.join(os.getcwd(), "images")):
+        os.makedirs(os.path.join(os.getcwd(), "images"))
     while True:
-        frame = car.get_view_frame()
+        frame = car.get_frame()
+# ---- Resulution  ----
+        res = frame.shape
+# ---- FPS berechnen ----
+        now = time.time()
+        dt = now - last_time
+        if dt > 0:
+            fps = 1.0 / dt
+        last_time = now
 
-        # Falls nötig zum Debuggen:
-        # print("DEBUG frame:", type(frame), "is None?", frame is None)
-        # print("DEBUG shape:", getattr(frame, 'shape', 'NO SHAPE'))
-
+# ---- FPS ins Bild zeichnen ----
+        cv2.putText(
+            frame,
+            f"FPS: {fps:.1f}, RES: {res}",
+            (10, 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            1,
+            cv2.LINE_AA,
+        )
+        # ------------------------
         ok, x = imencode(".jpeg", frame)
         if not ok:
             continue
         jpeg = x.tobytes()
-
         if car.speed > 0 and take_image:
             save_image(image_id, run_id, frame)
             image_id += 1
 
         yield (b"--frame\r\n"
                b"Content-Type: image/jpeg\r\n\r\n" + jpeg + b"\r\n\r\n")
+
 
 def save_image(image_id, run_id, frame):
     """Save an image from the camera"""
@@ -71,9 +102,9 @@ def shutdown_server():
 
 @server.route("/video_feed")
 def video_feed():
-    """Will return the video feed from the camera"""
+    # Bearbeitetes Bild – kommt aus car.get_frame() → process_frame(...)
     return Response(
-        generate_camera_image(car),  # wichtig: car, nicht car.camera
+        generate_stream(car.get_frame),  # Callable
         mimetype="multipart/x-mixed-replace; boundary=frame",
     )
 
@@ -209,7 +240,6 @@ def make_right_column():
     return dbc.Col([
         html.Div(style={"height": "10px"}),
         # Videoanzeige aus der Flask-Route:
-        html.Img(src="/video_feed",style={"width": "80%", "border": "2px black solid"},),
         html.Img(src="/video_feed",style={"width": "80%", "border": "2px black solid"},),
         dbc.Row([
             dbc.Col(),
