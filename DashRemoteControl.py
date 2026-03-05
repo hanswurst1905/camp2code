@@ -40,23 +40,24 @@ def generate_stream(frame_provider):
     """Generiert einen MJPEG-Stream, indem pro Iteration frame_provider() aufgerufen wird."""
     image_id = 0
     run_id = str(uuid.uuid4())[:8]
-# FPS Variablen
+    # FPS Variablen
     last_time = time.time()
     fps = 0
     if not os.path.exists(os.path.join(os.getcwd(), "images")):
         os.makedirs(os.path.join(os.getcwd(), "images"))
     while True:
-        frame = car.get_frame()
-# ---- Resulution  ----
+        frame = car.get_view_frame()    # Dashboard: fragt IMMER car.get_view_frame() diese Methode wird von jedem Car überschrieben
+        print("in dashboard mean", np.mean(frame))
+        # ---- Resulution  ----
         res = frame.shape
-# ---- FPS berechnen ----
+        # ---- FPS berechnen ----
         now = time.time()
         dt = now - last_time
         if dt > 0:
             fps = 1.0 / dt
         last_time = now
 
-# ---- FPS ins Bild zeichnen ----
+        # ---- FPS ins Bild zeichnen ----
         cv2.putText(
             frame,
             f"FPS: {fps:.1f}, RES: {res}",
@@ -73,6 +74,7 @@ def generate_stream(frame_provider):
             continue
         jpeg = x.tobytes()
         if car.speed > 0 and take_image:
+            # if take_image:
             save_image(image_id, run_id, frame)
             image_id += 1
 
@@ -91,7 +93,7 @@ def save_image(image_id, run_id, frame):
     print(filename)
 
 server = Flask(__name__)
-app = dash.Dash(__name__, server=server,external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 def shutdown_server():
     """Will shut down the server when the function is called"""
@@ -104,7 +106,7 @@ def shutdown_server():
 def video_feed():
     # Bearbeitetes Bild – kommt aus car.get_frame() → process_frame(...)
     return Response(
-        generate_stream(car.get_frame),  # Callable
+        generate_stream(car),  # Callable
         mimetype="multipart/x-mixed-replace; boundary=frame",
     )
 
@@ -269,7 +271,7 @@ app.layout = dbc.Container([
     html.H2("PiCar Dashboard", className="text-center my-4"),
     dbc.Tabs([
         make_cam_tab(),
-        dbc.Tab(label="Remote", tab_id="tab-steuerung", children=[
+        dbc.Tab(label="Remote", tab_id="tab-remote", children=[
             html.Div(children=[
                 html.H1("Remotesteuerung des Auto"),
                 html.Div(children="Das Auto kann mit den Tasten WSAD gesteuert werden"),

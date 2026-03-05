@@ -28,3 +28,7 @@ class CamCar(BaseCar):
         self._last_time = now
 
         return frame
+
+    def get_view_frame(self):
+        raw = self.camera.get_frame()
+        return raw                     # diese Methode wird von jedem CAR überschrieben
