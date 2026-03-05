@@ -28,6 +28,7 @@ class CnnCar(CamCar):
         output_data = interpreter.get_tensor(output_details[0]['index'])
         return max(min(int(output_data[0][0]),135),45)
     
+
     def fahrmodus_cnn(self):
         while True:
             self.get_image()

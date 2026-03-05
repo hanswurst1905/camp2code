@@ -102,7 +102,7 @@ class SensorDashboard(DataLogger):
                                 html.H4(id="speed-display", className="card-title"),
                                 dcc.Slider(
                                     id="speed-slider", min=-100, max=100, step=1, value=self.car.speed,
-                                    marks={-100: "-100", -30: "-30", 0: "0", 26: "26",40: "40", 50: "50",75: "75", 100: "100"}
+                                    marks={-100: "-100", -30: "-30", 0: "0", 26: "26",30: "30", 35: "35",75: "75", 100: "100"}
                                 )
                             ])
                         ], color="primary", inverse=True), width=6),
@@ -376,7 +376,7 @@ class SensorDashboard(DataLogger):
             html.Div(id="action-output", className="mt-3 text-center"),
 
             # Intervall zur Synchronisierung der Slider mit car-Werten
-            dcc.Interval(id="interval-sync", interval=500, n_intervals=0)
+            dcc.Interval(id="interval-sync", interval=1000, n_intervals=0)
         ], fluid=True)
         
 
