@@ -15,6 +15,7 @@ class CamCar(SensorCar):
         self.camera = Camera()
         self.img_flt_cropped = None
         self.img = None
+        self.img_raw = None
         self.img_hsv = None
         self.img_lined = None
         self.img_filtered = None
@@ -23,10 +24,7 @@ class CamCar(SensorCar):
         self.top = 0
         self.h = 0
         self.w = 0
-        self.h_c = 0
-        self.w_c = 0
         self.steering_angle_corr = 0
-        self.angle_corr = []
         self.angle_left_corr = 0
         self.angle_right_corr = 0
         self.angle_tar = self.steering_angle
@@ -90,13 +88,11 @@ class CamCar(SensorCar):
 
 
     def get_image(self):
-        img = self.camera.get_frame()
-        pix = 2
-        self.img = img[::pix,::pix,:]
+        self.img = self.camera.get_frame()
+        self.img_raw = self.img.copy()
         self.h, self.w = self.img.shape[:2]
         self.img_hsv = cv2.cvtColor(self.img,cv2.COLOR_BGR2HSV)
         return self.img
-
 
     def save_image(self):
         if self.save_images == True:
@@ -166,100 +162,51 @@ class CamCar(SensorCar):
         max_lines = 30
         try:
             if self.img_flt_cropped is None:
-                return self.lines
+                return
             lines = cv2.HoughLinesP(self.img_edges,1,np.pi/180, self._img_filter["hough_line_treshold"], minLineLength=self._img_filter["hough_line_line_minLineLength"], maxLineGap=self._img_filter["hough_line_maxLineGap"])
-            print("lines: ", lines)            
-            if lines is not None:
-                self.lines = self.lines = lines.reshape(-1, 4)  # ist notwendig, weil houghlines die Struktur [N,4,1] ausgibt [N,4]
+
+            # print("lines: ", lines)
             img = self.img_flt_cropped.copy()
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
-            if self.lines is not None:
-                # self.avg_right_line, self.avg_left_line, self.right_line, self.left_line = [],[], [], []
-                # self.left_det, self.right_det = False, False
-                # for line in self.lines:
-                #     if line[0] is None or len(line[0]) != 4:
-                #         continue
-                #     x1,y1,x2,y2 = line[0]
-                # auswahl ob erkannte linie rechts oder links liegt
-                # hough linien sind völlig unsortier keine abhängigkeiten x1 > x2 oder y1 > y2 oder ähnliche
-                # hier der Versuch mit min() und max()    
-                    # if max(x1,x2) <= self.w * 0.7 and min(x1,x2) <= self.w * 0.5: #left side line
-                    #     self.left_det = True                        
-                    #     if len(self.left_line) < max_lines:
-                    #         self.left_line.append(line[0])
-                    # elif max(x1,x2) > self.w * 0.7 and min(x1,x2) > self.w * 0.5: #right side line
-                    #     self.right_det = True
-                    #     if len(self.right_line) < max_lines:
-                    #         self.right_line.append(line[0])
-                # hier der Versuch mit Mittelwert
-#
-                            
+            if lines is not None:
+                self.avg_right_line, self.avg_left_line, self.right_line, self.left_line = [], [], [], []
+                self.left_det, self.right_det = False, False
+                for line in lines:
+                    if line[0] is None or len(line[0]) != 4:
+                        continue
+                    x1,y1,x2,y2 = line[0]
+                    # if max(x2,x1) <= self.w * 0.6 and min(x1,x2) <= self.w * 0.4: #left side line
+                    if (x1 + x2) / 2 <= self.w * 0.4:
+                        self.left_det = True
+                        if len(self.left_line) < max_lines:
+                            self.left_line.append(line[0])
+                    # elif max(x1,x2) > self.w * 0.6 and min(x1,x2) > self.w * 0.4: #right side line
+                    elif (x1 + x2) / 2 >= self.w * 0.6:
+                        self.right_det = True
+                        if len(self.right_line) < max_lines:
+                            self.right_line.append(line[0])
+                            # print("rl: ", self.right_line)
                 # mean calculation
-                # if len(self.left_line) > 0:
-                #     self.avg_left_line = np.mean(self.left_line, axis=0).astype(int) #mittelwert statt median, da der median tanzt
-                #     self.avg_left_line = self.avg_left_line.tolist()
-                # else:
-                #     self.avg_left_line = None
+                if len(self.left_line) > 0:
+                    self.avg_left_line = np.mean(self.left_line, axis=0).astype(int) #mittelwert statt median, da der median tanzt
+                    self.avg_left_line = self.avg_left_line.tolist()
+                else:
+                    self.avg_left_line = None
 
-                # if len(self.right_line) > 0:
-                #     self.avg_right_line = np.mean(self.right_line, axis=0).astype(int)
-                #     self.avg_right_line = self.avg_right_line.tolist()
-                # else:
-                #     self.avg_right_line = None
-               
-        # print lines
-                # for line in [self.avg_left_line, self.avg_right_line]:
-                #     if line is not None and len(line) == 4:
-                #         x1,y1,x2,y2 = line
-                #         cv2.line(self.img_filtered,(x1,y1+self.top),(x2,y2+self.top),(0,150,255),2)
-            # alle Linien zusammen
-                for line in self.lines:
-                    if line is not None:
+                if len(self.right_line) > 0:
+                    self.avg_right_line = np.mean(self.right_line, axis=0).astype(int)
+                    self.avg_right_line = self.avg_right_line.tolist()
+                else:
+                    self.avg_right_line = None
+                # print lines
+                for line in [self.avg_left_line, self.avg_right_line]:
+                    if line is not None and len(line) == 4:
                         x1,y1,x2,y2 = line
-                        cv2.line(self.img_filtered,(x1,y1+self.top),(x2,y2+self.top),(0,150,255),2)         
-            # links und rechts getrennt
-                # for line in self.left_line:
-                #     if line is not None:
-                #         x1,y1,x2,y2 = line
-                #         cv2.line(self.img_filtered,(x1,y1+self.top),(x2,y2+self.top),(0,150,255),2)         
-                # for line in self.right_line:
-                #     if line is not None:
-                #         x1,y1,x2,y2 = line
-                #         cv2.line(self.img_filtered,(x1,y1+self.top),(x2,y2+self.top),(0,150,255),2)
-                cv2.imwrite("test.jpg",self.img_filtered)
-  
- 
+                        cv2.line(self.img_filtered,(x1,y1+self.top),(x2,y2+self.top),(0,150,255),2)
                 self.calc_steering_angle_lr()
-        
-        #Lenkwinkel einzeichnen
-                try:
-                    cv2.putText(
-                        img=self.image_filtered,
-                        text=f"{int(self.steering_angle_filtered)} inkl. Ofs {int(self.angle_ofs)}",
-                        org=(10,25),
-                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale=0.7,
-                        color=(0,120,255),
-                        thickness=2,
-                        lineType = cv2.LINE_AA
-                    )
-                # Lenkwinkel Linie einzeichnen
-                    # if self.steering_angle_filtered > 90:
-                    #     angle_right -= 180
-                    # elif self.steering_angle_filtered < -90:
-                    #     angle_right += 180 
-                    dx_aus_LW = math.sin(math.radians(self.steering_angle_filtered-90)) * 100
-                    dy_aus_LW = math.cos(math.radians(self.steering_angle_filtered-90)) * 100
-    #                print(f"steering_angle_filtered: {self.steering_angle_filtered:.1f} dx_aus_LW {dx_aus_LW:.2f}, dy_aus_LW {dy_aus_LW:.2f}")
-                    x1_aus_LW = int(self.w_c / 2 + dx_aus_LW)
-                    y1_aus_LW = int(self.bottom - dy_aus_LW)
-                    x2_aus_LW = int(self.w_c / 2)
-                    y2_aus_LW = int(self.bottom)
-    #                print(f"x1_aus_LW {x1_aus_LW}, y1_aus_LW {y1_aus_LW}, x2_aus_LW {x2_aus_LW}, y2_aus_LW {y2_aus_LW}")
-                    cv2.line(self.image_filtered,(x1_aus_LW,y1_aus_LW),(x2_aus_LW,y2_aus_LW),(0,0,255),1)
-                except:
-                    print("kein Steering angle")
+                #Lenkwinkel einzeichnen
+         
             self.img_lined = img
 
         except Exception as e:
