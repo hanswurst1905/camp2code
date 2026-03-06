@@ -34,6 +34,7 @@ _last_ts = None
 
 car = OpenCVCar()
 take_image = False
+last_save_time = None
 
 
 def generate_stream(frame_provider):
@@ -73,8 +74,8 @@ def generate_stream(frame_provider):
         if not ok:
             continue
         jpeg = x.tobytes()
-        if car.speed > 0 and take_image:
-            # if take_image:
+#        if car.speed > 0 and take_image:
+        if take_image:
             save_image(image_id, run_id, frame)
             image_id += 1
 
@@ -84,12 +85,21 @@ def generate_stream(frame_provider):
 
 def save_image(image_id, run_id, frame):
     """Save an image from the camera"""
+    global last_save_time
     current_time = datetime.now().strftime("%Y%m%d_%H-%M-%S")
+    now = time.time() # Zeit in Sekunden
     path = "./images/"
     filename = "IMG_{}_{}_{}_{:04d}_S{:03d}_A{:03d}.jpg".format(
         "DRC", run_id, current_time, image_id, car.speed, car.steering_angle
     )
-    imwrite(path + filename, frame)
+    if last_save_time == None:   
+        imwrite(path + filename, frame)
+        last_save_time =  now
+    elif now - last_save_time >= 1.0:
+        imwrite(path + filename, frame)
+        last_save_time =  now
+    else:
+        pass
     print(filename)
 
 server = Flask(__name__)

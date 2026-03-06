@@ -40,8 +40,8 @@ class OpenCVCar(CamCar):
     def process_frame(self, frame):
         """Deine OpenCV-Pipeline: erst begradigen, NICHT reduzieren."""
         process_frame = frame
-        process_frame = self.image_size_reduction(process_frame, self.pix)
-        process_frame = self._undistort(process_frame)
+#        process_frame = self.image_size_reduction(process_frame, self.pix)
+#        process_frame = self._undistort(process_frame)
 
         return process_frame
 
