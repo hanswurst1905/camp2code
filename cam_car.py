@@ -42,6 +42,8 @@ class CamCar(SensorCar):
         self._save_time_interval = datetime.timedelta(seconds=1) #s
         self.save_time = None
         self.steering_angle_raw = []
+        self.steering_angle_raw_ema = None
+        self.ema = None
 
     def load_filter_values(self):
         car_config=self.read_config_json()
@@ -219,7 +221,6 @@ class CamCar(SensorCar):
         offset_max = 15
         l_l_thd, l_u_thd = 70, 89
         r_l_thd, r_u_thd = 91, 110   # untere und obere Schwelle
-        
 
         if self.left_det == True:
             x1l,y1l,x2l,y2l = self.avg_left_line
@@ -276,11 +277,14 @@ class CamCar(SensorCar):
                 self.ang_ofs_r = self.ang_ofs_r * fac_ang_ofs_2
                 
         self.angle_tar = self.angle_tar + self.ang_ofs_l + self.ang_ofs_r
-        self.steering_angle_raw.append(max(min(self.angle_tar,135),45))
-        if len(self.steering_angle_raw) >= 2:
-            self.steering_angle_raw.pop(0)
-        self.steering_angle = np.mean(self.steering_angle_raw)
-        # self.steering_angle = (max(min(self.angle_tar,135),45))
+        # self.steering_angle_raw.append(max(min(self.angle_tar,135),45))
+        # if len(self.steering_angle_raw) >= 2:
+        #     self.steering_angle_raw.pop(0)
+
+        # self.steering_angle = np.mean(self.steering_angle_raw)
+
+        self.steering_angle = self.glaettung_alpha(steering_angle=self.angle_tar, alpha=0.7)
+
 
         # print("left_det, right_det: ", self.left_det, self.right_det, self.angle_left_corr, self.angle_right_corr, self.angle_tar, x1l, x2r)
         text = f'{int(self.steering_angle)} {self.left_det} {int(self.ang_ofs_l)}  {self.right_det}  {int(self.ang_ofs_r)}'
@@ -293,7 +297,15 @@ class CamCar(SensorCar):
             color=(0,150,255),
             thickness=2,
             lineType = cv2.LINE_AA)
-           
+        
+    def glaettung_alpha(self, steering_angle, alpha):
+        steering_angle_raw_ema = (max(min(steering_angle,135),45))
+        if self.ema is None:
+            self.ema = self.steering_angle 
+        else:
+            self.ema = self.ema + alpha * (steering_angle_raw_ema - self.ema)
+        return self.ema
+
     def fahrmodus_cam(self):
         while True:
             self.filtered_image()
