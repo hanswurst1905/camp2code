@@ -105,9 +105,9 @@ class CamCar(SensorCar):
                 serial_number = self.get_pi_serial_number()
                 ang = self.steering_angle
                 spd = self.speed
-                folder = "pictures"
+                folder = "pictures2"
                 os.makedirs(folder,exist_ok=True)
-                fn = os.path.join("pictures",f'{timestamp}_{serial_number}_{int(spd)}_{int(ang)}.jpg')
+                fn = os.path.join(folder,f'{timestamp}_{serial_number}_{int(spd)}_{int(ang)}.jpg')
                 cv2.imwrite(fn,self.img_raw)
                 self.save_time = datetime.datetime.now()
 
@@ -226,7 +226,7 @@ class CamCar(SensorCar):
             dxl, dyl = x1l-x2l, y1l-y2l
             angle_left = 180 - math.degrees(math.atan2(dyl,dxl))
             offset = ((x1l+x2l)/2) - img_center
-            fac_h = ((abs(y1l-y2l)) / self.h_c ) * self._img_filter["fac_h_fummel"] # 0...2
+            fac_h = ((abs(y1l+y2l)/2) / self.h_c ) * self._img_filter["fac_h_fummel"] # 0...2
             # self.angle_left_corr = angle_left - offset * self._img_filter["fac_angle"] # 112-90= 22*0,5 = 11 = 101, 11  
             self.angle_left_corr = (angle_left - offset * self._img_filter["fac_angle"] - 90) * fac_h + 90 # 70-90=-20*0.5=-10+90=80
             
@@ -241,7 +241,7 @@ class CamCar(SensorCar):
 
             if self.angle_tar < l_u_thd:
                 fac_ang_ofs_2 = max(min((l_u_thd - self.steering_angle) / (l_u_thd - l_l_thd), 1), 0)
-                self.ang_ofs_l = self.ang_ofs_l * fac_ang_ofs_2
+                self.ang_ofs_l = self.ang_ofs_l * (1 - fac_ang_ofs_2)
             self.angle_tar = self.angle_tar + self.ang_ofs_l
 
         if self.right_det == True:
@@ -249,7 +249,7 @@ class CamCar(SensorCar):
             dxr, dyr = x1r-x2r, y1r-y2r
             angle_right = 180+math.degrees(math.atan2(dyr,dxr))
             offset = ((x1r+x2r)/2) - img_center
-            fac_h = ((abs(y1r-y2r)) / self.h_c) * self._img_filter["fac_h_fummel"] # 0...2
+            fac_h = ((abs(y1r+y2r)/2) / self.h_c) * self._img_filter["fac_h_fummel"] # 0...2
             # self.angle_right_corr = angle_right + offset * self._img_filter["fac_angle"]
             self.angle_right_corr = (angle_right + offset * self._img_filter["fac_angle"] - 90) * fac_h + 90
             wx = (x1r + x2r) / 2
@@ -260,7 +260,7 @@ class CamCar(SensorCar):
 
             if self.angle_tar > r_l_thd:
                 fac_ang_ofs_2 = max(min((self.steering_angle - r_l_thd) / (r_u_thd - r_l_thd), 1), 0)
-                self.ang_ofs_r = self.ang_ofs_r * fac_ang_ofs_2
+                self.ang_ofs_r = self.ang_ofs_r * (1 - fac_ang_ofs_2)
             self.angle_tar = self.angle_tar + self.ang_ofs_r
 
         if self.left_det == True and self.right_det == True:

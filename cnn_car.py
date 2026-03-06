@@ -1,59 +1,59 @@
-from software.basisklassen_cam import*
-from sensor_car import*
-import cv2
+import tflite_runtime.interpreter as tflite
 import numpy as np
-import math
-import datetime 
-import os
-import pygame
+import cv2
+from cam_car import*
 
+class CnnCar(CamCar):
 
-
-class CamCar(SensorCar):
     def __init__(self):
         super().__init__()
-        self.camera = Camera()
-        self.img_flt_cropped = None
-        self.img = None
-        self.img_raw = None
-        self.img_hsv = None
-        self.img_lined = None
-        self.img_filtered = None
-        self.img_edges = None
-        self.bottom = 0
-        self.top = 0
-        self.h = 0
-        self.w = 0
-        self.steering_angle_corr = 0
-        self.angle_left_corr = 0
-        self.angle_right_corr = 0
-        self.angle_tar = self.steering_angle
-        self.left_line = []
-        self.right_line = []
-        self.left_det = False
-        self.right_det =False
-        self.ang_ofs = 0
-        self.ang_ofs_l = 0
-        self.ang_ofs_r = 0
-        self.load_filter_values()
-        self.angle_tar_buf = []
-        self.steering_angle_filtered = 90
-        self.save_images = False
-        self._save_time_interval = datetime.timedelta(seconds=1) #s
-        self.save_time = None
-        self.steering_angle_raw = []
 
-    def load_filter_values(self):
-        car_config=self.read_config_json()
-        serial_number = self.get_pi_serial_number()
 
-        if "img_filter" in car_config[serial_number]:
-            self._img_filter = car_config[serial_number]["img_filter"]
-        else:
-            self._img_filter = {
-                "hue_l": 90,
-                "hue_u": 105,
-                "sat_l": 50,
+    def predict_steering_angle(self):
+        interpreter = tflite.Interpreter(model_path="model/03_live_model_tflite.tflite") # path=Pfad zur .tflite Datei
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+        interpreter.allocate_tensors()
+
+        # img = cv2.imread("/home/pi/scripts/PiCar/pictures/2026-02-27_18_41_44.804_10000000210c65be_121.jpg")
+        self.get_image()
+        img = self.image
+
+        # gleiche Bildvorverarbeitung wie bei den Trainingsdaten fürs Modell
+        new_img = cv2.resize(img, (224, 224))
+        
+        new_img = new_img.astype(np.float32)
+        h,w = new_img.shape[:2]
+        bottom = h - int(0.15*h)
+        top = int(0.3*h)
+        new_img = img[top:bottom,:,:]
+        new_img = cv2.cvtColor(new_img, cv2.COLOR_BGR2GRAY)
+        new_img = cv2.cvtColor(new_img, cv2.COLOR_GRAY2BGR)
+
+        new_img = np.asarray(new_img) / 255
+        new_img = np.expand_dims(new_img, axis=0)
+        interpreter.set_tensor(input_details[0]['index'], new_img)
+        interpreter.invoke()
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+        return max(min(int(output_data[0][0]),135),45)
+    
+
+    def fahrmodus_cnn(self):
+        while True:
+            self.get_image()
+            self.steering_angle = self.predict_steering_angle()
+            self.save_image()
+            if self.state == "stop":
+                print("CamCar Ende")
+                break
+
+def main():
+    car = CnnCar()
+    steering_angle = car.predict_steering_angle()
+    print(steering_angle)
+
+if __name__ == "__main__":
+    main()      "sat_l": 50,
                 "sat_u": 250,
                 "val_l": 0,
                 "val_u": 255,
