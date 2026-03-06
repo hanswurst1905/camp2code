@@ -105,9 +105,9 @@ class CamCar(SensorCar):
                 serial_number = self.get_pi_serial_number()
                 ang = self.steering_angle
                 spd = self.speed
-                folder = "pictures"
+                folder = "pictures2"
                 os.makedirs(folder,exist_ok=True)
-                fn = os.path.join("pictures",f'{timestamp}_{serial_number}_{int(spd)}_{int(ang)}.jpg')
+                fn = os.path.join(folder,f'{timestamp}_{serial_number}_{int(spd)}_{int(ang)}.jpg')
                 cv2.imwrite(fn,self.img_raw)
                 self.save_time = datetime.datetime.now()
 
@@ -241,7 +241,7 @@ class CamCar(SensorCar):
 
             if self.angle_tar < l_u_thd:
                 fac_ang_ofs_2 = max(min((l_u_thd - self.steering_angle) / (l_u_thd - l_l_thd), 1), 0)
-                self.ang_ofs_l = self.ang_ofs_l * fac_ang_ofs_2
+                self.ang_ofs_l = self.ang_ofs_l * (1 - fac_ang_ofs_2)
             self.angle_tar = self.angle_tar + self.ang_ofs_l
 
         if self.right_det == True:
@@ -260,7 +260,7 @@ class CamCar(SensorCar):
 
             if self.angle_tar > r_l_thd:
                 fac_ang_ofs_2 = max(min((self.steering_angle - r_l_thd) / (r_u_thd - r_l_thd), 1), 0)
-                self.ang_ofs_r = self.ang_ofs_r * fac_ang_ofs_2
+                self.ang_ofs_r = self.ang_ofs_r * (1 - fac_ang_ofs_2)
             self.angle_tar = self.angle_tar + self.ang_ofs_r
 
         if self.left_det == True and self.right_det == True:
