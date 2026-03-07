@@ -16,7 +16,7 @@ class CamCar(BaseCar):
         Holt das rohe Kamerabild von Camera().
         Berechnet zugleich FPS (einfach, nicht zeitgemittelt).
         """
-        frame = self.camera.get_frame()
+        frame = self.camera.get_frame()         # einziger Hardware zugriff der Cars alle weiteren dürfen nur über get_view_frame zugreifen
         if frame is None:
             # Fallback schwarzes Bild
             return np.zeros((240,240,3), dtype=np.uint8)

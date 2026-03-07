@@ -22,7 +22,6 @@ class OpenCVCar(CamCar):
             self.undistorter = None
             print("Fisheye-Undistort deaktiviert: Datei nicht gefunden.")
             return
-
         try:
             self.undistorter = FisheyeUndistorter(calib_path, balance=0.0)
             self._undistort_enabled = True
@@ -34,14 +33,15 @@ class OpenCVCar(CamCar):
 
 
     def get_view_frame(self):
-        raw = self.camera.get_frame()   # get_frame()  ← einziger Hardwarezugriff
+        raw = self.get_frame()   # Durchgriff auf CamCar also self Methode get_frame()
         return self.process_frame(raw)  # jedes CAR überschreibt get_view_frame()  ← liefert verarbeitete Views
 
     def process_frame(self, frame):
         """Deine OpenCV-Pipeline: erst begradigen, NICHT reduzieren."""
         process_frame = frame
+        process_frame = self._undistort(process_frame)
 #        process_frame = self.image_size_reduction(process_frame, self.pix)
-#        process_frame = self._undistort(process_frame)
+
 
         return process_frame
 

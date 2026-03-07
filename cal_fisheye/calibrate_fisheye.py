@@ -7,33 +7,13 @@ import cv2
 # === Kalibrieraufnahmen mit Schachbrett ===
 
 # Die Ausrichtung MUSS identisch sein zu der, die du später nutzt.
-#  Halte das Schachbrett schräg, seitlich, nah, fern
-#  Zeige verschiedene Rotationen (um x, y, z‑Achse)
-#  Halte es mal mehr links, mal mehr rechts
-#  Halte es oben, unten, leicht geneigt
-#  Aber immer im Sichtfeld deiner realen Kamera
-
-### Kriterien für verwertbarkeit des Bildes
-#  gute Ausleuchtung
-#  klare Schwarz/Weiß-Kontraste
-#  Schärfe! Keine Bewegungsunschärfe
-#  Kein Reflexlicht
-#  Keine spiegelnden Oberflächen
-# Nicht zu dunkel / zu hell
-
-### Ablehnung wenn:
-#  Fokus daneben
-#  Motion Blur (beim In-der-Hand-Halten oft ein Problem)
-#  Überbelichtung / Unterbelichtung
-#  Schatten auf den Quadraten
-#  LED‑Flackern (bei schlechtem Licht)
-
+# nutze das calibrate_dashboard.py für die Erstellung der Kalibrierbilder
 
 # === Konfiguration ===
 # Innere Ecken (an DEIN Brett anpassen!):
 CHECKERBOARD = (7, 7)   # (columns, rows) inner corners # Anzahl der Kanten im Raster beim echten Schachbrett 8x8 Felder d.h. 7x7 Kanten
 SQUARE_SIZE = 1.0       # reale Kantenlänge einer Zelle (Einheit egal, skaliert F nur relativ)
-IMAGES_GLOB = "./cal_fisheye/*.jpg"  # ggf. enger einschränken, z.B. "./images/IMG_DRC_*.jpg"
+IMAGES_GLOB = "./cal_fisheye/cal_images/*.jpg"  # ggf. enger einschränken, z.B. "./images/IMG_DRC_*.jpg"
 OUT_FILE = "./calibration_fisheye.npz"
 
 def main():
